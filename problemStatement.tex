@@ -1,0 +1,298 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Simple Sectioned Essay Template
+% LaTeX Template
+%
+% This template has been downloaded from:
+% http://www.latextemplates.com
+%
+% Note:
+% The \lipsum[#] commands throughout this template generate dummy text
+% to fill the template out. These commands should all be removed when 
+% writing essay content.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[12pt]{article} % Default font size is 12pt, it can be changed here
+
+\usepackage[utf8]{inputenc}
+
+%\usepackage[square,sort,numbers]{natbib}
+
+\usepackage{geometry} % Required to change the page size to A4
+\geometry{a4paper} % Set the page size to be A4 as opposed to the default US Letter
+
+\usepackage{graphicx} % Required for including pictures
+
+\usepackage{float} % Allows putting an [H] in \begin{figure} to specify the exact location of the figure
+\usepackage{wrapfig} % Allows in-line images such as the example fish picture
+
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+
+\linespread{1.2} % Line spacing
+
+%\setlength\parindent{0pt} % Uncomment to remove all indentation from paragraphs
+
+\graphicspath{{Pictures/}} % Specifies the directory where pictures are stored
+
+\begin{document}
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\begin{titlepage}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} % Defines a new command for the horizontal lines, change thickness here
+
+\center % Center everything on the page
+
+\textsc{\LARGE Università della Svizzera Italiana}\\[1.5cm] % Name of your university/college
+\textsc{\Large Master Thesis}\\[0.5cm] % Major heading such as course name
+\textsc{\large Accelerator for Event-based Failure Prediction}\\[0.5cm] % Minor heading such as course title
+
+\HRule \\[0.4cm]
+{ \huge \bfseries Problem Statement}\\[0.4cm] % Title of your document
+\HRule \\[1.5cm]
+
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Author:}\\
+Simon \textsc{Maurer} % Your name
+\end{flushleft}
+\end{minipage}
+~
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Supervisor:} \\
+Prof. Miroslaw \textsc{Malek} % Supervisor's Name
+\end{flushright}
+\end{minipage}\\[4cm]
+
+{\large \today}\\[3cm] % Date, change the \today to a set date if you want to be precise
+
+%\includegraphics{Logo}\\[1cm] % Include a department/university logo - this will require the graphicx package
+
+\vfill % Fill the rest of the page with whitespace
+
+\end{titlepage}
+
+%----------------------------------------------------------------------------------------
+%	TABLE OF CONTENTS
+%----------------------------------------------------------------------------------------
+
+\tableofcontents % Include a table of contents
+
+\newpage % Begins the essay on a new page instead of on the same page as the table of contents 
+
+%----------------------------------------------------------------------------------------
+%	INTRODUCTION
+%----------------------------------------------------------------------------------------
+
+\section{Introduction} % Major section
+
+This document provides an outline of the planned work for the master thesis
+"Accelerator for Event-based Failure Prediction". The document addresses the
+problem considered by the thesis, a state of the art outline as well as
+important questions and hypothesis that arise or are needed for the thesis.
+Further the document provides a list of necessary theory bases and introduces
+the design and experimenting methods applied in the thesis. Finally, the
+document gives an overview of necessary material in terms of literature and
+equipment, shows the preliminary work progress and provides a broad time
+schedule.
+
+%----------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------
+
+\section{Problem and Research Area} % Major section
+
+In today's live it becomes increasingly important, that computer systems are
+dependable. The reason being, that computer systems are used more and more in
+areas where the failure of such a system can lead to catastrophic events.
+Banking, public transportation and medical engineering are only a few examples
+of areas employing large and extremely complex systems. The increasing
+complexity of computer systems has a direct impact on their maintainability and
+testability. It is simply impossible to guarantee that a piece of software comes
+without any faults. On top of that, the same problematic arises with the
+hardware components which also may contain faulty parts but also gets
+increasingly prone to failures due to decay of material.
+
+In the event of a system failure it is of course desirable to fix the system as
+soon as possible in order to minimize the downtime of the system (maximize the
+availability). This can be accomplished by using different types of recovery
+techniques, e.g. Check-pointing (create checkpoints to roll back/forward),
+system replication (switch to a redundant system), fail over (reboot). All these
+techniques require a certain amount of time to complete the recovery process,
+time that is very expensive. In order to minimize this time, techniques have
+been developed to anticipate upcoming failures. Such a technique is described in
+\cite{salfner08}.
+
+The work presents a new algorithm to predict failures and compares the results
+with other techniques. The accuracy of the presented algorithm to predict
+failures proves to be better compared to the other techniques, has however the
+drawback of increased complexity and hence increased computation time. It is
+very important to keep the computation overhead very low in order to maximize
+the time between the prediction of a failure and the actual event of the
+failure. One way to decrease the computation time is to design a hardware
+accelerator for the prediction algorithm. The design of such an accelerator is
+outlined in this document.
+
+The presented algorithm uses system information, e.g. log entries, to predict
+failures during runtime (online). To be able to interpret the log files, it is
+important that they are structured in a standardized format. Further it is
+necessary input real log files to the algorithm in order to verify its
+performance (in terms of precision and speed). Unfortunately it is not possible
+to use the same data already used in the reference work, because of
+confidentiality issues. For this reason, new test data have to be generated by
+respecting the data properties described in the reference work as well as
+respecting a log representation standard.
+
+%----------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------
+
+\section{State of the Art Outline} % Major section
+
+This section provides a brief outline of the state of the art in the different
+fields of research that are relevant for the thesis. This includes a small
+overview of failure prediction methods, existing solutions to accelerate
+failure prediction algorithms and concepts of log standardization.
+
+%------------------------------------------------
+
+\subsection{Failure Prediction} % Sub-section
+
+A very detailed overview of failure prediction methods is given in
+\cite{ACM10_Salfner}. The techniques used as comparison in the main reference
+\cite{salfner08} as well as the described technique are listed below.
+
+\begin{itemize} % Numbered list example
+    \item Event-based Failure Prediction \cite{salfner08} 
+    \item Dispersion Frame Technique (DFT) \cite{lin88}
+    \item Eventset \cite{ICDM02_Vilalta}
+    \item SVD-SVM \cite{domeniconi02}
+\end{itemize}
+
+Maybe some words about the counter ideas (SEER: a lightweight online failure
+prediction approach)
+
+%------------------------------------------------
+
+\subsection{Accelerator} % Sub-section
+
+The following list presents designs to accelerate algorithms related to machine
+learning and the computation of hidden Markov models:
+\begin{itemize}
+    \item \cite{ASAP12_Azhar} presents an architecture for a lightweight Viterbi
+        accelerator designed for a embedded processor datapath.
+    \item \cite{FCCM09_Cadambi} describes a FPGA based accelerator for the
+        SVM-SMO (support vector machine - sequential minimal optimization)
+        algorithm used in the domain of machine learning.
+    \item \cite{IPDPS07_Jacob,ICS06_Maddimsetty,IPDPS07_Oliver} describes a FPGA
+        based accelerator for protein sequence HHM search. The Viterbi algorithm
+        is used.
+    \item \cite{IPDPS09_Walters} describes i.a. an approach to accelerate the
+        Viterbi algorithm from the HMMER library using GPUs.
+\end{itemize}
+
+%------------------------------------------------
+
+\subsection{Log Standardization} % Sub-section
+
+\cite{IPDPS04_Salfner} describes an approach on how to standardize logs. Still
+missing are sources for:
+\begin{itemize}
+    \item data generation in order to verify an algorithm
+    \item metrics to measure log quality
+    \item more on log standardization
+\end{itemize}
+
+%----------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------
+
+\section{Questions and Hypothesis} % Major section
+
+The following list is intended to give an overview of open questions:
+\begin{itemize}
+    \item how to parallelize the algorithm
+    \item what kind of accelerator (SVM, GPU, just use multiple cores)
+    \item how to generate test data to verify the accelerator
+    \item \dots
+\end{itemize}
+
+The accelerator will be designed by taking the following hypotheses into account:
+\begin{itemize}
+    \item Algorithm of Felix is accurate but slow (to verify by online tests)
+    \item the system using the accelerator provides standardized log events
+    \item only the online part of the algorithm needs to be accelerated
+    \item \dots
+\end{itemize}
+
+%----------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------
+
+\section{Theory Base} % Major section
+
+%------------------------------------------------
+
+\subsection{Taxonomy of Dependable Computing} % Sub-section
+\begin{itemize} % Numbered list example
+    \item Fault-Error-Failure chain \cite{IEEE04_Avizienis}
+    \item Precision and Recall \cite{rijsbergen79}
+    \item F-Measure \cite{DARPA99_Makhoul}
+\end{itemize} 
+
+%------------------------------------------------
+
+\subsection{Algorithms} % Sub-section
+\begin{itemize} % Numbered list example
+    \item Tupling and Grouping of log events
+    \item Forward algorithm
+    \item Baum-Welch algorithm
+    \item Classification
+\end{itemize} 
+
+%----------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------
+
+\section{Method, Design and Experiments} % Major section
+
+This enumeration gives a broad overview on how the design of the accelerator
+will be accomplished.
+\begin{enumerate}
+    \item analyze the possibility of parallelization of the online algorithm
+    \item generate sets of test data (log events)
+    \item implement the complete algorithm with Octave (Matlab)
+    \item run the Octave model with the generated test data for verification
+    \item implement the online algorithm in C (create executable)
+    \item run the online part without accelerator (on CPU)
+    \item implement an accelerator for the online part
+    \item run the online part with the accelerator
+    \item compute speedup
+\end{enumerate}
+
+%----------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------
+
+\section{Preliminary Work Progress} % Major section
+todo\dots
+
+%----------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------
+
+\section{Time Schedule} % Major section
+todo\dots
+
+%----------------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%----------------------------------------------------------------------------------------
+
+%\bibliographystyle{abbrvnat}
+\bibliographystyle{siam}
+\bibliography{biblio}
+
+%----------------------------------------------------------------------------------------
+
+\end{document}
