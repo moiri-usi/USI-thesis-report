@@ -170,7 +170,7 @@ A very detailed overview of failure prediction methods is given in
 
 \begin{itemize} % Numbered list example
     \item Event-based Failure Prediction \cite{salfner08} 
-    \item Dispersion Frame Technique (DFT) \cite{lin88}
+    \item Dispersion Frame Technique (DFT) \cite{lin88,IEEE90_lin}
     \item Eventset \cite{ICDM02_Vilalta}
     \item SVD-SVM \cite{domeniconi02}
 \end{itemize}
@@ -219,6 +219,14 @@ The following list is intended to give an overview of open questions:
     \item how to parallelize the algorithm
     \item what kind of accelerator (SVM, GPU, just use multiple cores)
     \item how to generate test data to verify the accelerator
+    \item \dots
+\end{itemize}
+
+Spezific questions concerning the algorithm:
+\begin{itemize}
+    \item what type of kernels (for transition durations D(t))
+    \item why multiple kernels
+    \item how to get G after computing the gradient
     \item \dots
 \end{itemize}
 
