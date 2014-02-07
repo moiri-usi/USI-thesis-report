@@ -222,11 +222,19 @@ The following list is intended to give an overview of open questions:
     \item \dots
 \end{itemize}
 
-Spezific questions concerning the algorithm:
+Specific questions concerning the algorithm:
 \begin{itemize}
-    \item what type of kernels (for transition durations D(t))
-    \item why multiple kernels
+    \item what type of kernels (for transition durations $ D(t) $)
+    \item why multiple kernels and how to implement it
     \item how to get G after computing the gradient
+    \item \dots
+\end{itemize}
+
+Possible optimizations of the algorithm:
+\begin{itemize}
+    \item use a regularization term in the cost function to prevent overfitting
+    \item incorporate the offline part of the algorithm into the online part in
+        order to deal with model aging
     \item \dots
 \end{itemize}
 
@@ -267,19 +275,66 @@ The accelerator will be designed by taking the following hypotheses into account
 
 \section{Method, Design and Experiments} % Major section
 
-This enumeration gives a broad overview on how the design of the accelerator
-will be accomplished.
-\begin{enumerate}
-    \item analyze the possibility of parallelization of the online algorithm
-    \item generate sets of test data (log events)
-    \item implement the complete algorithm with Octave (Matlab)
-    \item run the Octave model with the generated test data for verification
-    \item implement the online algorithm in C (create executable)
-    \item run the online part without accelerator (on CPU)
-    \item implement an accelerator for the online part
-    \item run the online part with the accelerator
-    \item compute speedup
-\end{enumerate}
+In a first step, the proposed algorithm will be implemented in
+Octave\footnote{https://www.gnu.org/software/octave}. The main reason for
+choosing Octave is on one hand the simplicity to implement complex algorithms
+with only a few lines of code and on the other hand the immediate revelation of
+possible parallelization possibilities. This implementation is also meant to
+help to fully understand the algorithm and possibly provide some ideas about
+optimizations related to the design of an accelerator.
+
+The next step will consist of generating synthetic data to verify the
+correctness of the implementation. This data will also be used to verify
+further implementations and to compute a speedup by comparing the accelerated
+and the non-accelerated implementation. Knowing this, it is important to
+generate data that can easily be imported into Octave but also been used as
+input stream for a C/C++ implementation.
+
+Further, the online part (sequence processing, classification) of the algorithm
+will be implemented in C++. To be able to run and verify the algorithm, the
+training data computed with Octave will be used. It is possible that due to
+optimization decisions it will also be necessary to implement the off-line part
+of the algorithm (training) in C++. In this case, the training data will be
+computed anew. To efficiently implement the algorithm in C++ a linear algebra
+library will be used (e.g. Armadillo\footnote{http://arma.sourceforge.net},
+Eigen\footnote{http://eigen.tuxfamily.org},
+LAPACK\footnote{http://www.netlib.org/lapack}, etc.).  It will be analyzed
+which library is best fitting for the purposes of this work. This sequential
+implementation will represent the reference to which the accelerated
+implementation will be compared to.
+
+Finally, the accelerator will be designed. The design will include discussion
+concerning the choice of accelerator (e.g. FPGA, GPU, multiple cores). As
+a minimum approach, only the online part of the algorithm will be accelerated.
+However, due to optimization reasons it may be desirable to also accelerate the
+off-line part and alter the whole algorithm in such away as to compute the
+learning process online and hence being able to react to model aging problems.
+Again the generated synthetic data will be used to verify the algorithm as well
+as to compute a speedup compared to the non-accelerated implementation.
+
+In addition to the steps listed above it would be very desirable to verify the
+accelerated algorithm with real data. To accomplish this, one idea is to set up
+the following experiment:
+
+Run high-load procedures (e.g. prime number computation) on a undervolted
+CPU-core and observe the internal hardware counters of the CPU-core. Whenever
+a counter overflows, the counter id and the time of the overflow is recorded.
+Additionally also the time and the type of failures of the CPU are recorded.
+This data can then be fed to the algorithm:
+\begin{itemize}
+    \item each recorded counter id corresponds to an event
+    \item the difference between two consecutive events corresponds to the
+        delay $ d_k = t_{k+1} - t_k $
+    \item the failure events are used as oracle to compute F-measure, Precision
+        and Recall
+\end{itemize}
+Should the experiment result in a reasonable F-measure, it would not only have
+been showed that the accelerated algorithm works on real data, but also that it
+is possible to predict HW failures of a CPU-core by using hardware counters.
+This experiment must first be performed with a non-optimized version of the
+algorithm (i.e. the exact same implementation as described in \cite{salfner08})
+before it is repeated with an optimized version (if any optimization has been
+implemented).
 
 %----------------------------------------------------------------------------------------
 %----------------------------------------------------------------------------------------
