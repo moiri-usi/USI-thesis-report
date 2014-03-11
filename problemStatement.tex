@@ -32,6 +32,8 @@
 
 \usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
 
+\usepackage{mathtools}
+
 \linespread{1.2} % Line spacing
 
 %\setlength\parindent{0pt} % Uncomment to remove all indentation from paragraphs
@@ -117,7 +119,7 @@ of areas employing large and extremely complex systems. The increasing
 complexity of computer systems has a direct impact on their maintainability and
 testability. It is simply impossible to guarantee that a piece of software comes
 without any faults. On top of that, the same problematic arises with the
-hardware components which also may contain faulty parts but also gets
+hardware components which also may contain faulty parts but also get
 increasingly prone to failures due to decay of material.
 
 In the event of a system failure it is of course desirable to fix the system as
@@ -168,7 +170,7 @@ A very detailed overview of failure prediction methods is given in
 \cite{ACM10_Salfner}. The techniques used as comparison in the main reference
 \cite{salfner08} as well as the described technique are listed below.
 
-\begin{itemize} % Numbered list example
+\begin{itemize}
     \item Event-based Failure Prediction \cite{salfner08} 
     \item Dispersion Frame Technique (DFT) \cite{lin88,IEEE90_lin}
     \item Eventset \cite{ICDM02_Vilalta}
@@ -177,6 +179,21 @@ A very detailed overview of failure prediction methods is given in
 
 Maybe some words about the counter ideas (SEER: a lightweight online failure
 prediction approach)
+
+Discuss the arguments of Felix
+\begin{description}
+    \item[Too many parameters to be identified, estimated and set] \hfill \\
+        Considering an embedded system, this is usually not a problem because
+        the parameters are defined during the design phase and will never be
+        changed.
+    \item[Limited performance scalability] \hfill \\
+        \dots to be analyzed \dots
+    \item[Industry trends towards cloud, not single node prediction] \hfill \\
+        In embedded systems it will still be beneficial to predict failures of
+        single nodes.
+    \item 
+\end{description}
+
 
 %------------------------------------------------
 
@@ -217,16 +234,28 @@ missing are sources for:
 The following list is intended to give an overview of open questions:
 \begin{itemize}
     \item how to parallelize the algorithm
-    \item what kind of accelerator (SVM, GPU, just use multiple cores)
+    \item what kind of accelerator (FPGA, GPU, just use multiple cores)
     \item how to generate test data to verify the accelerator
     \item \dots
 \end{itemize}
 
-Specific questions concerning the algorithm:
+Specific questions concerning the offline algorithm:
 \begin{itemize}
-    \item what type of kernels (for transition durations $ D(t) $)
-    \item why multiple kernels and how to implement it
-    \item how to get G after computing the gradient
+    \item what type of kernels (for transition durations $ D(t) $) and how many
+    \item gradient of kernel partially derived by parameters: also sum over k
+    \item how to compute the step size $ \eta $ (line search: $ \eta_k
+        = h(\eta) $, choice of $ h(\eta) $)
+    \item choice of bounds to stop iteration (step size, sequence likelihood)
+    \item \dots
+\end{itemize}
+
+Ideas on how to accelerate the online part of the algorith
+\begin{itemize}
+    \item use high speed multiplier-accumulator (MAC) devices on a FPGA
+    \item use MACs only on integer numbers and compute FP later manually
+    \item minimize division (compute scaling factor once and then multiply)
+    \item if precision allows use pipelining to precompute the factor
+        $ b(j, o[k]) * v(i, j, k) $
     \item \dots
 \end{itemize}
 
@@ -240,7 +269,7 @@ Possible optimizations of the algorithm:
 
 The accelerator will be designed by taking the following hypotheses into account:
 \begin{itemize}
-    \item Algorithm of Felix is accurate but slow (to verify by online tests)
+    \item Algorithm of Felix has been verified in his work
     \item the system using the accelerator provides standardized log events
     \item only the online part of the algorithm needs to be accelerated
     \item \dots
@@ -262,13 +291,174 @@ The accelerator will be designed by taking the following hypotheses into account
 
 %------------------------------------------------
 
-\subsection{Algorithms} % Sub-section
-\begin{itemize} % Numbered list example
-    \item Tupling and Grouping of log events
-    \item Forward algorithm
-    \item Baum-Welch algorithm
-    \item Classification
-\end{itemize} 
+\subsection{Algorithm Description} % Sub-section
+
+This section provides an brief overview of the computational steps done by the
+proposed algorithm. The following description should provide a complete
+blueprint of the algorithm, that allows to implement it, but without any
+explications or proofs related to the formulation. To be able to understand the
+formal expression of the algorithm, first a definition of the used parameters
+is provided.
+\begin{itemize}
+    \item N: number of states
+    \item M: number of observation symbols
+    \item L: observation sequence length
+    \item R: number of cumulative probability distributions (kernels)
+\end{itemize}
+The delay of the event at time $ t_k $ with respect to the event at time
+$ t_{k-1} $ is described as
+\begin{equation}
+    d_k = t_k-t_{k-1}
+\end{equation}
+One part of the algorithm is the model training. The features to be trained are
+the following:
+\begin{itemize}
+    \item $ \pi_i $, forming the initial state probability vector
+        $ \boldsymbol{\pi} $ of size $ N $
+    \item $ b_i(o_j) $, forming the emission probability matrix $ B $ of size
+        $ N \times M $
+    \item $ p_{ij} $, forming the matrix of limiting transmission probabilities
+        $ P $ of size $ N \times N $
+    \item $ \omega_{ij, r} $, the weights of the kernel $ r $
+    \item $ \theta_{ij, r} $, the parameters of the kernel $ r $
+\end{itemize}
+For simplification reasons, in a first step only one kernel is used. Due to 
+this, the kernel weights can be ignored. Choosing the gaussian distribution
+results in the kernel parameters $ \mu_{ij} $ forming $ \Theta_{\mu} $ and
+$ \sigma_{ij} $ forming $ \Theta_\sigma $.
+\begin{equation}
+    \kappa_{ij, gauss}(d_k | \mu_{ij}, \sigma_{ij}) = 
+        \frac{1}{\sigma_{ij} \sqrt{2 \pi}}
+        \exp(-0.5 \frac{(d_k - \mu_{ij})^2}{\sigma_{ij}^2})
+\end{equation}
+The training of the model is accomplished by the following steps.
+\begin{enumerate}
+    \item initialize $ \boldsymbol{\pi} $, $ B $, $ P $, $ \mu $ and $ \sigma $
+\end{enumerate}
+\begin{equation}
+    d_{ij}(d_k) = \sum_{r=1}^{R} \omega_{ij,r}\kappa_{ij,r}(d_k|\theta_{ij, r})
+\end{equation}
+\begin{equation}
+    v_{ij}(d_k) = \left\{
+        \begin{array}{l l}
+            p_{ij} d_{ij}(d_k)
+                & \quad \text{if $j \neq i$}\\
+            1 - \sum\limits_{\substack{h=1 \\ h \neq i}}^{N} p_{ih} d_{ih}(d_k)
+                & \quad \text{if $j = i$}
+        \end{array} \right.
+\end{equation}
+%\begin{equation}
+%    g_{ij} = d_{ij}p_{ij}
+%\end{equation}
+\begin{equation}
+    \alpha_0(i) = \pi_{i}b_{s_i}(O_0) \\
+\end{equation}
+\begin{equation}
+    \alpha_k(j) = \sum_{i=1}^{N} \alpha_{k-1}(i) v_{ij}(d_k) b_{s_j}(O_k);
+    \quad 1 \leq k \leq L
+\end{equation}
+%\begin{equation}
+%    \beta_L(i) = 1
+%\end{equation}
+%\begin{equation}
+%    \beta_k(i) = \sum_{j=1}^{N} v_{ij}(d_k) b_{s_j}(O_{k+1}) \beta_{k+1}(j)
+%\end{equation}
+%\begin{equation}
+%    \gamma_k(i) = \frac{\alpha_k(i) \beta_k(i)}
+%        {\sum\limits_{i=1}^{N} \alpha_k(i) \beta_k(i)}
+%\end{equation}
+%\begin{equation}
+%    \xi_k(i,j) =
+%        \frac{\alpha_k(i) v_{ij}(d_{k+1}) b_{s_j}(O_{k+1}) \beta_{k+1}(j)}
+%        {\sum\limits_{i=1}^{N} 
+%            \alpha_k(i) v_{ij}(d_{k+1}) b_{s_j}(O_{k+1}) \beta_{k+1}(j)}
+%\end{equation}
+%\begin{equation}
+%    \log\big [P(\boldsymbol{o}|\lambda)\big ] = -\sum_{k=1}^{N} \log\big [
+%        \frac{1}{\sum\limits_{i=1}^{N} \alpha_k(i)} \big ]
+%\end{equation}
+%\begin{equation}
+%    \pi_i = \gamma_0(i)
+%\end{equation}
+%\begin{equation}
+%    b_i(o_j) = \frac{\sum\limits_{\substack{k=0 \\ O_k = o_j}}^{L} \gamma_k(i)}
+%        {\sum\limits_{k=0}^{L} \gamma_k(i)}
+%\end{equation}
+%\begin{equation}
+%    Q_i^v = \sum\limits_{k=1}^{L}
+%        \bigg[\sum\limits_{\substack{i=1 \\ i \neq j}}^{N}
+%        \Big\{ \xi_k(i, j) \log\big [p_{ij}d_{ij}(d_k)\big ]\Big\} +
+%        \xi_k(i, i) \log \big [ 1 - \sum\limits_{\substack{h=1 \\ h \neq i}}^{N}
+%        p_{ih}d_{ih}(d_k)\big ]\bigg ]
+%\end{equation}
+%\begin{equation}
+%        \frac{\partial Q_i^v}{\partial p_{ij}} = \left\{
+%        \begin{array}{l l}
+%            \sum\limits_{k=1}^{L} \bigg [ \xi_k(i, j) \frac{1}{p_{ij}} - 
+%                \xi_k(i, i) \frac{d_{ij}(d_k)}
+%                {1 - \sum\limits_{\substack{h=1 \\ h \neq i}}^{N}
+%                p_{ih}d_{ih}(d_k)} \bigg ]
+%                & \quad \text{if $j \neq i$}\\
+%            0
+%                & \quad \text{if $j = i$}
+%        \end{array} \right.
+%\end{equation}
+%\begin{equation}
+%    \frac{\partial Q_i^v}{\partial \omega_{ij, r}} =
+%        \frac{\partial Q_i^v}{\partial d_{ij}(d_k)}
+%        \frac{\partial d_{ij}(d_k)}{\partial \omega_{ij, r}}
+%\end{equation}
+%\begin{equation}
+%        \frac{\partial Q_i^v}{\partial d_{ij}(d_k)} = \left\{
+%        \begin{array}{l l}
+%            \sum\limits_{k=1}^{L} \bigg [ \xi_k(i, j) \frac{1}{d_{ij}(d_k)} -
+%                \xi_k(i, i) \frac{p_{ij}}
+%                {1 - \sum\limits_{\substack{h=1 \\ h \neq i}}^{N}
+%                p_{ih}d_{ih}(d_k)} \bigg ]
+%                & \quad \text{if $j \neq i$}\\
+%            0
+%                & \quad \text{if $j = i$}
+%        \end{array} \right.
+%\end{equation}
+%\begin{equation}
+%    \frac{\partial d_{ij}(d_k)}{\partial \omega_{ij, r}} =
+%    \kappa_{ij, r}(d_k | \theta_{ij, r})
+%\end{equation}
+%\begin{equation}
+%    \frac{\partial Q_i^v}{\partial \theta_{ij, r}} =
+%        \frac{\partial Q_i^v}{\partial d_{ij}(d_k)}
+%        \frac{\partial d_{ij}(d_k)}{\partial \kappa_{ij, r}}
+%        \frac{\partial \kappa_{ij, r}}{\partial \theta_{ij, r}}
+%\end{equation}
+%\begin{equation}
+%    \frac{\partial \kappa_{ij, gauss}(\mu_{ij}, \sigma_{ij})}
+%        {\partial \mu_{ij}} =
+%        \sum\limits_{k=1}^{L} \bigg [
+%        \frac{\mu_{ij} - d_k}{\sigma_{ij}^3 \sqrt{2 \pi}}
+%    \exp(-0.5 \frac{(d_k - \mu_{ij})^2}{\sigma_{ij}}) \bigg ]
+%\end{equation}
+%\begin{equation}
+%    \frac{\partial \kappa_{ij, gauss}(\mu_{ij}, \sigma_{ij})}
+%        {\partial \sigma_{ij}} =
+%        \sum\limits_{k=1}^{L} \bigg [
+%        \frac{-\sigma_{ij}^2 + \mu_{ij}^2 - 2 \mu_{ij} d_k + d_k^2}
+%        {\sigma_{ij}^4 \sqrt{2 \pi}}
+%    \exp(-0.5 \frac{(d_k - \mu_{ij})^2}{\sigma_{ij}}) \bigg ]
+%\end{equation}
+
+Description of D(t), P, G, pi, kernel, weights, distribution
+function,
+
+\begin{description} % Numbered list example
+    \item[Data Processing] \hfill \\
+        Tupling and grouping of events\dots
+    \item[Model Training] \hfill \\
+        Baum-Welch algorithm\dots
+    \item[Sequence Processing] \hfill \\
+        Forward algorithm. Sequence likelihood.
+    \item[Classification] \hfill \\
+        Bayes Decision.
+\end{description} 
 
 %----------------------------------------------------------------------------------------
 %----------------------------------------------------------------------------------------
