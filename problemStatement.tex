@@ -19,26 +19,10 @@
 \documentclass[12pt]{article} % Default font size is 12pt, it can be changed here
 
 \usepackage[utf8]{inputenc}
-
-%\usepackage[square,sort,numbers]{natbib}
-
-\usepackage{geometry} % Required to change the page size to A4
-\geometry{a4paper} % Set the page size to be A4 as opposed to the default US Letter
-
-\usepackage{graphicx} % Required for including pictures
-
-\usepackage{float} % Allows putting an [H] in \begin{figure} to specify the exact location of the figure
-\usepackage{wrapfig} % Allows in-line images such as the example fish picture
-
-\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
-
+\usepackage[square,sort,numbers]{natbib}
+\usepackage[a4paper]{geometry} % Required to change the page size to A4
 \usepackage{mathtools}
-
-\linespread{1.2} % Line spacing
-
-%\setlength\parindent{0pt} % Uncomment to remove all indentation from paragraphs
-
-\graphicspath{{Pictures/}} % Specifies the directory where pictures are stored
+\usepackage{hyperref}
 
 \begin{document}
 
@@ -75,8 +59,6 @@ Prof. Miroslaw \textsc{Malek} % Supervisor's Name
 \end{minipage}\\[4cm]
 
 {\large \today}\\[3cm] % Date, change the \today to a set date if you want to be precise
-
-%\includegraphics{Logo}\\[1cm] % Include a department/university logo - this will require the graphicx package
 
 \vfill % Fill the rest of the page with whitespace
 
@@ -149,8 +131,8 @@ outlined in this document.
 
 This section provides a brief outline of the state of the art in the different
 fields of research that are relevant for the thesis. This includes a small
-overview of failure prediction methods, existing solutions to accelerate
-failure prediction algorithms and concepts of log standardization.
+overview of failure prediction methods and existing solutions to accelerate
+failure prediction algorithms.
 
 %------------------------------------------------
 
@@ -212,8 +194,6 @@ and its implementation on a FPGA for SVMs.
 
 This section first lists the main questions that will be discussed, answered and
 verified in the master thesis:
-It also states the hypotheses that are taken into
-account to design the accelerator. Following the list of questions:
 \begin{description}
     \item[Argumentation for the necessity of the work] \hfill \\
         The thesis will state why this work is necessary. Problems such as the
@@ -230,6 +210,10 @@ account to design the accelerator. Following the list of questions:
         parametrization, different cost metrics, etc. need to be taken into
         account. Possible accelerator technologies are multicore processors,
         GPUs and FPGAs.
+    \item[Practical implementation of the accelerator] \hfill \\
+        Using the theoretical analysis of the algorithm as well as the choice
+        of the accelerator type, practical decisions upon the type of
+        acceleration techniques will be taken and discussed.
     \item[How to generate test data to verify the accelerator] \hfill \\
         In order to verify the work, test data needs to be available. Either the
         data is taken from some public repository, or it must be generated.
@@ -250,7 +234,8 @@ accelerator for the adapted forward algorithm:
         supposed, that the events are generated sequentially and fed to the
         accelerator through a defined interface (to be defined in the thesis).
     \item Only the online part of the reference algorithm will be accelerated.
-        The model training which is computed offline will not be accelerated.
+        The acceleration of model training which is computed offline is optional
+        and will most likely be neglected in this master thesis.
 \end{itemize}
 
 %----------------------------------------------------------------------------------------
@@ -289,10 +274,10 @@ Following the features:
     \item $ \omega_{ij, r} $, the weights of the kernel $ r $
     \item $ \theta_{ij, r} $, the parameters of the kernel $ r $
 \end{itemize}
-For simplification reasons, in a first step only one kernel is used. Due to 
-this, the kernel weights can be ignored. Choosing the gaussian cumulative
-distribution results in the kernel parameters $ \mu_{ij} $ and $ \sigma_{ij} $.
-The adapted forward algorithm is defined as follows:
+For simplification reasons, only one kernel is used. Due to this, the kernel
+weights can be ignored. Choosing the gaussian cumulative distribution results
+in the kernel parameters $ \mu_{ij} $ and $ \sigma_{ij} $.  The adapted forward
+algorithm is defined as follows:
 \begin{equation}
     \alpha_0(i) = \pi_{i}b_{s_i}(O_0) \\
 \end{equation}
@@ -340,7 +325,7 @@ then the sequence log-likelihood is computed:
 \begin{equation}
     \log(P(\boldsymbol{o}|\lambda)) = -\sum\limits_{k=1}^{L} \log c_k
 \end{equation}
-with $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $,  and finally the
+where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $,  and finally the
 classification is performed:
 \begin{equation}
     \text{class}(s) = F \iff \max_{i=1}^{u} \big [
@@ -527,8 +512,30 @@ events will occur far to fast for the algorithm to compute the result in time.
 %----------------------------------------------------------------------------------------
 
 \section{Time Schedule} % Major section
-todo\dots
+This section provides a broad overview of the time schedule to finish the
+master thesis. This schedule is not accurate and serves only as a guideline. It
+will certainly change due to the fact, that the date of the defense is not yet
+available.
 
+\begin{description}
+    \item[End of March] \hfill \\
+        The decision on the type of accelerator has been taken. The process to
+        get to this decision involves the study of the state of the art in
+        accelerator technologies and the study of the algorithm to accelerate.
+    \item[Mid of April] \hfill \\
+        A verification scheme is available as well as the data to verify the
+        accelerator. This also includes the exact choice of the device on which
+        the accelerator will be implemented and tested.
+    \item[Mid of Mai] \hfill \\
+        The final implementation of the accelerator is available as well as
+        a serial implementation serving as a reference. The verification phase
+        can start. Until this point all acceleration decisions have been
+        discussed and documented.
+    \item[Mid of June] \hfill \\
+        The first draft of the documentation is available.
+    \item[End of June] \hfill \\
+        The documentation has been finalized.
+\end{description}
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
 %----------------------------------------------------------------------------------------
