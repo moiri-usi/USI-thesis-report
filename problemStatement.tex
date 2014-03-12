@@ -301,11 +301,6 @@ with
 \end{equation}
 forming the matrix of cumulative transition duration distribution functions
 $ D(d_k) $ of size $ N \times N \times L $, and
-%\begin{equation}
-%    \kappa_{ij, gauss}(d_k | \mu_{ij}, \sigma_{ij}) = 
-%        \frac{1}{\sigma_{ij} \sqrt{2 \pi}}
-%        \exp(-0.5 \frac{(d_k - \mu_{ij})^2}{\sigma_{ij}^2})
-%\end{equation}
 \begin{equation}
     \kappa_{ij, gauss}(d_k | \mu_{ij}, \sigma_{ij}) = 
         0.5\bigg [1 + \frac{2}{\pi}\Big (
@@ -346,97 +341,6 @@ To calculate $ \theta $, the following parameters need to be set:
     \item $ r_{\bar{F}F} $: false positive prediction
     \item $ r_{F\bar{F}} $: false negative prediction
 \end{itemize}
-%\begin{equation}
-%    g_{ij} = d_{ij}p_{ij}
-%\end{equation}
-%\begin{equation}
-%    \beta_L(i) = 1
-%\end{equation}
-%\begin{equation}
-%    \beta_k(i) = \sum_{j=1}^{N} v_{ij}(d_k) b_{s_j}(O_{k+1}) \beta_{k+1}(j)
-%\end{equation}
-%\begin{equation}
-%    \gamma_k(i) = \frac{\alpha_k(i) \beta_k(i)}
-%        {\sum\limits_{i=1}^{N} \alpha_k(i) \beta_k(i)}
-%\end{equation}
-%\begin{equation}
-%    \xi_k(i,j) =
-%        \frac{\alpha_k(i) v_{ij}(d_{k+1}) b_{s_j}(O_{k+1}) \beta_{k+1}(j)}
-%        {\sum\limits_{i=1}^{N} 
-%            \alpha_k(i) v_{ij}(d_{k+1}) b_{s_j}(O_{k+1}) \beta_{k+1}(j)}
-%\end{equation}
-%\begin{equation}
-%    \log\big [P(\boldsymbol{o}|\lambda)\big ] = -\sum_{k=1}^{N} \log\big [
-%        \frac{1}{\sum\limits_{i=1}^{N} \alpha_k(i)} \big ]
-%\end{equation}
-%\begin{equation}
-%    \pi_i = \gamma_0(i)
-%\end{equation}
-%\begin{equation}
-%    b_i(o_j) = \frac{\sum\limits_{\substack{k=0 \\ O_k = o_j}}^{L} \gamma_k(i)}
-%        {\sum\limits_{k=0}^{L} \gamma_k(i)}
-%\end{equation}
-%\begin{equation}
-%    Q_i^v = \sum\limits_{k=1}^{L}
-%        \bigg[\sum\limits_{\substack{i=1 \\ i \neq j}}^{N}
-%        \Big\{ \xi_k(i, j) \log\big [p_{ij}d_{ij}(d_k)\big ]\Big\} +
-%        \xi_k(i, i) \log \big [ 1 - \sum\limits_{\substack{h=1 \\ h \neq i}}^{N}
-%        p_{ih}d_{ih}(d_k)\big ]\bigg ]
-%\end{equation}
-%\begin{equation}
-%        \frac{\partial Q_i^v}{\partial p_{ij}} = \left\{
-%        \begin{array}{l l}
-%            \sum\limits_{k=1}^{L} \bigg [ \xi_k(i, j) \frac{1}{p_{ij}} - 
-%                \xi_k(i, i) \frac{d_{ij}(d_k)}
-%                {1 - \sum\limits_{\substack{h=1 \\ h \neq i}}^{N}
-%                p_{ih}d_{ih}(d_k)} \bigg ]
-%                & \quad \text{if $j \neq i$}\\
-%            0
-%                & \quad \text{if $j = i$}
-%        \end{array} \right.
-%\end{equation}
-%\begin{equation}
-%    \frac{\partial Q_i^v}{\partial \omega_{ij, r}} =
-%        \frac{\partial Q_i^v}{\partial d_{ij}(d_k)}
-%        \frac{\partial d_{ij}(d_k)}{\partial \omega_{ij, r}}
-%\end{equation}
-%\begin{equation}
-%        \frac{\partial Q_i^v}{\partial d_{ij}(d_k)} = \left\{
-%        \begin{array}{l l}
-%            \sum\limits_{k=1}^{L} \bigg [ \xi_k(i, j) \frac{1}{d_{ij}(d_k)} -
-%                \xi_k(i, i) \frac{p_{ij}}
-%                {1 - \sum\limits_{\substack{h=1 \\ h \neq i}}^{N}
-%                p_{ih}d_{ih}(d_k)} \bigg ]
-%                & \quad \text{if $j \neq i$}\\
-%            0
-%                & \quad \text{if $j = i$}
-%        \end{array} \right.
-%\end{equation}
-%\begin{equation}
-%    \frac{\partial d_{ij}(d_k)}{\partial \omega_{ij, r}} =
-%    \kappa_{ij, r}(d_k | \theta_{ij, r})
-%\end{equation}
-%\begin{equation}
-%    \frac{\partial Q_i^v}{\partial \theta_{ij, r}} =
-%        \frac{\partial Q_i^v}{\partial d_{ij}(d_k)}
-%        \frac{\partial d_{ij}(d_k)}{\partial \kappa_{ij, r}}
-%        \frac{\partial \kappa_{ij, r}}{\partial \theta_{ij, r}}
-%\end{equation}
-%\begin{equation}
-%    \frac{\partial \kappa_{ij, gauss}(\mu_{ij}, \sigma_{ij})}
-%        {\partial \mu_{ij}} =
-%        \sum\limits_{k=1}^{L} \bigg [
-%        \frac{\mu_{ij} - d_k}{\sigma_{ij}^3 \sqrt{2 \pi}}
-%    \exp(-0.5 \frac{(d_k - \mu_{ij})^2}{\sigma_{ij}}) \bigg ]
-%\end{equation}
-%\begin{equation}
-%    \frac{\partial \kappa_{ij, gauss}(\mu_{ij}, \sigma_{ij})}
-%        {\partial \sigma_{ij}} =
-%        \sum\limits_{k=1}^{L} \bigg [
-%        \frac{-\sigma_{ij}^2 + \mu_{ij}^2 - 2 \mu_{ij} d_k + d_k^2}
-%        {\sigma_{ij}^4 \sqrt{2 \pi}}
-%    \exp(-0.5 \frac{(d_k - \mu_{ij})^2}{\sigma_{ij}}) \bigg ]
-%\end{equation}
 
 %----------------------------------------------------------------------------------------
 %----------------------------------------------------------------------------------------
