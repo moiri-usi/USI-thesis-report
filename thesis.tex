@@ -36,8 +36,6 @@ morecomment=[l]{//s},
 \frontmatter %generates the frontmatter, this is FIXED
 
 \begin{abstract}
-
-\lipsum
 \end{abstract}
 
 %\begin{abstract}[Zusammenfassung]
@@ -58,89 +56,333 @@ morecomment=[l]{//s},
 
 \mainmatter
 
+%===============================================================================
 \chapter{Introduction}
+%-------------------------------------------------------------------------------
 \section{Problem Statement}
+%-------------------------------------------------------------------------------
 \section{Motivation}
+
+The email of Felix left some doubts to whether the acceleration of the
+algorithm is useful. The following list will give some arguments to justify
+the work.
+\begin{description}
+    \item[Too many parameters to be identified, estimated and set] \hfill \\
+        Considering an embedded system, this is usually not a problem because
+        the parameters are defined during the design phase and will never be
+        changed afterwards.
+    \item[Limited performance scalability] \hfill \\
+        There are studies available claiming otherwise. The discussion of
+        Neumanns work will provide some arguments against this statement.
+    \item[Industry trends point towards cloud] \hfill \\
+        In embedded systems it will still be beneficial to predict failures of
+        single nodes. It is however important to keep the power and
+        computational footprint low. This will be one of the major challenges.
+        On the other hand, I think it would also be possible to also use this
+        algorithm to monitor a distributed system and predict failures. It is
+        only a matter of getting defining the events to feed to the algorithm.
+\end{description}
+
+%-------------------------------------------------------------------------------
 \section{Contributions}
+%-------------------------------------------------------------------------------
 \section{Document Structure}
 
+%===============================================================================
 \chapter{State of the Art}
+%-------------------------------------------------------------------------------
 \section{Failure Prediction}
-\section{Accelerator - SVM}
+%-------------------------------------------------------------------------------
+\section{Accelerator}
 
+%===============================================================================
 \chapter{Implementation}
+%-------------------------------------------------------------------------------
 \section{Data Processing}
+%-------------------------------------------------------------------------------
 \section{Model Training}
+%-------------------------------------------------------------------------------
 \section{Sequence Processing}
+%-------------------------------------------------------------------------------
 \section{Classification}
 
+%===============================================================================
 \chapter{Acceleration}
+Challanges of the acceleration
+\begin{itemize}
+    \item implementation of exp and log function (LUT, Taylor, ...)
+    \item floating points vs fixed points
+    \item precision
+    \item choice of accelerator (Type, Model)
+    \item find avaliable options for parallelization
+\end{itemize}
+
+Ideas on how to accelerate the online part of the algorithm
+\begin{itemize}
+    \item use high speed multiplier-accumulator (MAC) devices on a FPGA
+    \item use MACs only on integer numbers and compute FP later manually
+    \item minimize division (compute scaling factor once and then multiply)
+    \item if precision allows use pipelining to precompute the factor
+        $ b(j, o[k]) * v(i, j, k) $
+    \item precompute known factors and store them in order to simlify online
+        computation (e.g. parts of the kernel, classification thershold, ...).
+    \item \dots
+\end{itemize}
+
+Possible optimizations of the algorithm:
+\begin{itemize}
+    \item use a regularization term in the cost function to prevent overfitting
+    \item incorporate the offline part of the algorithm into the online part in
+        order to deal with model aging
+    \item \dots
+\end{itemize}
+%-------------------------------------------------------------------------------
 \section{Theoretical Analysis}
+%------------------------------------------
+\subsection{Theory Base}
+This section provides a brief overview of the computational steps done by the
+proposed algorithm. The following description should provide a complete
+blueprint of the adapted forward algorithm, that allows to implement it, but
+without any explications or proofs related to the formulation. To be able to
+understand the formal expression of the algorithm, first a definition of the
+used parameters is provided.
+\begin{itemize}
+    \item N: number of states
+    \item M: number of observation symbols
+    \item L: observation sequence length
+    \item R: number of cumulative probability distributions (kernels)
+\end{itemize}
+The delay of the event at time $ t_k $ with respect to the event at time
+$ t_{k-1} $ is described as
+\begin{equation}
+    d_k = t_k-t_{k-1}
+\end{equation}
+One part of the algorithm is the model training. This part is not described
+here. The features to be trained by the model training are however important
+in this context because they are used by the adapted forward algorithm.
+Following the features:
+\begin{itemize}
+    \item $ \pi_i $, forming the initial state probability vector
+        $ \boldsymbol{\pi} $ of size $ N $
+    \item $ b_i(o_j) $, forming the emission probability matrix $ B $ of size
+        $ N \times M $
+    \item $ p_{ij} $, forming the matrix of limiting transmission probabilities
+        $ P $ of size $ N \times N $
+    \item $ \omega_{ij, r} $, the weights of the kernel $ r $
+    \item $ \theta_{ij, r} $, the parameters of the kernel $ r $
+\end{itemize}
+The adapted forward algorithm is defined as follows:
+\begin{equation}
+    \label{eq:forward_init}
+    \alpha_0(i) = \pi_{i}b_{s_i}(O_0) \\
+\end{equation}
+\begin{equation}
+    \label{eq:forward}
+    \alpha_k(j) = \sum_{i=1}^{N} \alpha_{k-1}(i) v_{ij}(d_k) b_{s_j}(O_k);
+    \quad 1 \leq k \leq L
+\end{equation}
+where
+\begin{equation}
+    \label{eq:V}
+    v_{ij}(d_k) = \left\{
+        \begin{array}{l l}
+            p_{ij} d_{ij}(d_k)
+                & \quad \text{if $j \neq i$}\\
+            1 - \sum\limits_{\substack{h=1 \\ h \neq i}}^{N} p_{ih} d_{ih}(d_k)
+                & \quad \text{if $j = i$}
+        \end{array} \right.
+\end{equation}
+with
+\begin{equation}
+    \label{eq:D}
+    d_{ij}(d_k) = \sum_{r=1}^{R} \omega_{ij,r}\kappa_{ij,r}(d_k|\theta_{ij, r})
+\end{equation}
+forming the matrix of cumulative transition duration distribution functions
+$ D(d_k) $ of size $ N \times N \times L $.
+
+For simplification reasons, only one kernel is used. Due to this, the kernel
+weights can be ignored. Equation \ref{eq:D} can then be simplified:
+\begin{equation}
+    \label{eq:D_fact}
+    d_{ij}(d_k) = \kappa_{ij}(d_k | \theta_{ij})
+\end{equation}
+Choosing the gaussian cumulative distribution results in the kernel parameters
+$ \mu_{ij} $ and $ \sigma_{ij} $:
+\begin{equation}
+    \label{eq:kernel}
+    \kappa_{ij, gauss}(d_k | \mu_{ij}, \sigma_{ij}) = 
+        0.5\bigg [1 + \frac{2}{\pi}\Big (
+            1 - \exp \big (-\frac{d_k - \mu_{ij}}{\sqrt 2 \sigma_{ij}}\big )
+        \Big ) \bigg ]
+\end{equation}
+To prevent $ \alpha $ from going to zero very fast, at each step of the forward
+algorithm a scaling is performed:
+\begin{equation}
+    \alpha_k(i) = c_k \alpha_k(i)
+\end{equation}
+with
+\begin{equation}
+    c_k = \frac{1}{\sum\limits_{i=1}^{N} \alpha_k(i)}
+\end{equation}
+then the sequence log-likelihood is computed:
+\begin{equation}
+    \log(P(\boldsymbol{o}|\lambda)) = -\sum\limits_{k=1}^{L} \log c_k
+\end{equation}
+where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $,  and finally the
+classification is performed:
+\begin{equation}
+    \label{eq:class}
+    \text{class}(s) = F \iff \max_{i=1}^{u} \big [
+        \log P(\boldsymbol{s}|\lambda_i)
+    \big ] - \log P(\boldsymbol{s}|\lambda_0) > \log \theta
+\end{equation}
+with
+\begin{equation}
+    \label{eq:class_thresh}
+    \theta = \frac{(r_{\bar{F}F} - r_{\bar{F}\bar{F}})P(c_{\bar{F}})}
+        {(r_{F \bar{F}} - r_{FF})P(c_{F})}
+\end{equation}
+To calculate $ \theta $, the following parameters need to be set:
+\begin{itemize}
+    \item $ P(c_{\bar{F}}) $: prior of non-failure class
+    \item $ P(c_F) $: prior of failure class
+    \item $ r_{\bar{F}\bar{F}} $: true negative prediction
+    \item $ r_{FF} $: true positive prediction
+    \item $ r_{\bar{F}F} $: false positive prediction
+    \item $ r_{F\bar{F}} $: false negative prediction
+\end{itemize}
+
+%------------------------------------------
+\subsection{Pre-Computation of Known Parameters}
+To reduce the computation effort of the algorithm during runtime, it may be
+desirable to pre-compute factors composed of known parameters and store them in
+the ROM of the accelerator. This may increase the necessary ROM on the
+accelerator but reduce the number of costly computations.
+
+Considering this, the equation \ref{eq:kernel} can be rewritten in the
+following matter, by using the exponential properties:
+\begin{equation}
+    \label{eq:kernel_fact}
+    \kappa_{ij, gauss}(d_k | \mu_{ij}, \sigma_{ij})
+        = c_{ij, 1} - c_{ij, 2} \exp (c_{ij, 3} d_k)
+\end{equation}
+with the factors
+\begin{equation}
+    \label{eq:c1}
+    c_{ij, 1} = 0.5 + \frac{1}{\pi}
+\end{equation}
+,
+\begin{equation}
+    \label{eq:c2}
+    c_{ij, 2} = \frac{1}{\pi} \exp(\frac{\mu_{ij}}{\sqrt 2 \sigma_{ij}})
+\end{equation}
+and
+\begin{equation}
+    \label{eq:c3}
+    c_{ij, 3} = - \frac{1}{\sqrt 2 \sigma_{ij}}
+\end{equation}
+By using the equations \ref{eq:D_fact} and \ref{eq:kernel_fact}, \ref{eq:V} can
+now be written as
+\begin{equation}
+    \label{eq:V_fact}
+    v_{ij}(d_k) = \left\{
+        \begin{array}{l l}
+            c_{ij, 1}^{'} - c_{ij, 2}^{'} \exp (c_{ij, 3} d_k)
+                & \quad \text{if $j \neq i$}\\
+            1 - \sum\limits_{\substack{h=1 \\ h \neq i}}^{N} \big [
+                c_{ih, 1}^{'} - c_{ih, 2}^{'} \exp (c_{ih, 3} d_k) \big ]
+                & \quad \text{if $j = i$}
+        \end{array} \right.
+\end{equation}
+with the factors
+\begin{equation}
+    \label{eq:c1p}
+    c_{ij, 1}^{'} = p_{ij} c_{ij, 1} = p_{ij} (0.5 + \frac{1}{\pi})
+\end{equation}
+and
+\begin{equation}
+    \label{eq:c2p}
+    c_{ij, 2}^{'} = p_{ij} c_{ij, 2} = \frac{p_{ij}}{\pi}
+        \exp(\frac{\mu_{ij}}{\sqrt 2 \sigma_{ij}})
+\end{equation}
+The factors \ref{eq:c1p}, \ref{eq:c2p} and \ref{eq:c3} can be precomputed and
+stored in memory. Upon the computation of \ref{eq:V_fact} the factors are read
+out of the ROM on the accelerator. Without pre-computation, the necessary ROM
+storage to provide the model parameters on the accelerator is
+\begin{equation}
+    N \pi_{\#bit}
+        + NM b_{\#bit}
+        + N^2 ( p_{\#bit} + \mu_{\#bit} + \sigma_{\#bit})
+        \,\text{bit}
+\end{equation}
+With the pre-computation described above
+\begin{equation}
+    N \pi_{\#bit}
+        + NM b_{\#bit}
+        + N^2 (c1_{\#bit}^{'} + c2_{\#bit}^{'} + c3_{\#bit})
+        \,\text{bit}
+\end{equation}
+of available ROM storage is necessary.
+
+\emph{Check speed and memory difference}
+
+Also with equation \ref{eq:forward_init} pre-computing should be considered.
+Instead of loading $ \pi $ into the ROM of the accelerator, a new
+matrix $ B^{'} $ of size $ N \times M $ where
+\begin{equation}
+    b_{il}^{'} = \pi_i b_{s_i}(O_l)
+\end{equation}
+can be computed and stored. The matrix $ B $ also needs to be stored because
+it is still used in equation \ref{eq:forward}. By using this pre-computation,
+the necessary ROM storage is now:
+\begin{equation}
+    NM(b_{\#bit} + b_{\#bit}^{'})
+        + N^2(c1_{\#bit}^{'} + c2_{\#bit}^{'} + c3_{\#bit})
+        \,\text{bit}
+\end{equation}
+
+\emph{Check speed and memory difference}
+
+The $ \log $ of equation \ref{eq:class_thresh} can also be precomputed as it is
+used in equation \ref{eq:class} and all parameters are known before runtime.
+
+%-------------------------------------------------------------------------------
 \section{Model implementation}
+%-------------------------------------------------------------------------------
 \section{GPU-Acceleration}
+%-------------------------------------------------------------------------------
 \section{FPGA-Acceleration}
 
+%===============================================================================
 \chapter{Testing and Verification}
+%-------------------------------------------------------------------------------
 \section{Log Standard}
+%-------------------------------------------------------------------------------
 \section{Metrics}
+%-------------------------------------------------------------------------------
 \section{Automated Log Generation}
+%-------------------------------------------------------------------------------
 \section{Online Log Generation}
 
+%===============================================================================
 \chapter{Results}
+%-------------------------------------------------------------------------------
 \section{Speedup}
+%-------------------------------------------------------------------------------
 \section{Accuracy}
 
+%===============================================================================
 \chapter{Conclusion}
+%-------------------------------------------------------------------------------
 \section{Achievements}
+%-------------------------------------------------------------------------------
 \section{Future Work}
 
-%\textbf{Theorem 1 (Residue Theorem).}
-%Let $f$ be analytic in the region $G$ except for the isolated singularities $a_1,a_2,\ldots,a_m$. If $\gamma$ is a closed rectifiable curve in $G$ which does not pass through any of the points $a_k$ and if $\gamma\approx 0$ in $G$ then
-%\[
-%\frac{1}{2\pi i}\int_\gamma f = \sum_{k=1}^m n(\gamma;a_k) \text{Res}(f;a_k).
-%\]
-%\textbf{Theorem 2 (Maximum Modulus).}
-%\emph{Let $G$ be a bounded open set in $\mathbb{C}$ and suppose that $f$ is a continuous function on $G^-$ which is analytic in $G$. Then}
-%\[
-%\max\{|f(z)|:z\in G^-\}=\max \{|f(z)|:z\in \partial G \}.
-%\]
-
-%\lipsum \texttt{Some Test}
-%\lstset{language=algebra,linewidth=0.95\linewidth,breaklines=true,numbers=left,
-%basicstyle=\ttfamily,numberstyle=\tiny,escapeinside={//*}{\^^M},
-%mathescape=true}
-%\begin{lstlisting}
-%import IntSpec, ItemSpec;
-%
-%sort cart; //*\label{sort}
-%
-%constructors //*\label{begin-sig}
-%create() $\longrightarrow$ cart;
-%insert(cart, item) $\longrightarrow$ cart;
-%observers
-%amount(cart) $\longrightarrow$ int;
-%transformers
-%delete(cart, item) $\longrightarrow$ cart; //*\label{end-sig}
-%
-%axioms //*\label{begin-axioms}
-%forall c: cart, i, j: item 
-%
-%amount(create()) $=$ 0; //*\label{begin-amount}
-%amount(insert(c,i)) $=$ amount(c) $+$ price(i); //*\label{end-amount}
-%delete(create(),i) $=$ create(); //*\label{begin-delete}
-%delete(insert(c,i),j) $=$
-%if (i =$\:$= j) c
-%else insert(delete(c,j),i); //*\label{end-axioms}
-%end
-%\end{lstlisting}
-
-%As you can easily see from the above listing \citet{bbggs:iet07}
-%define something weird based on the BPEL specification
-%\citet{bpelspec}.
 \nocite{*}
 
 \appendix %optional, use only if you have an appendix
 
+%===============================================================================
 \chapter{Some material}
 %\section{It's over\dots}
 
