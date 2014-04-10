@@ -1,0 +1,9 @@
+Title:
+Acceleration of a Extended Forward Algorithm for Failure Prediction on FPGA
+
+Pseudo-Abstarct:
+In today's life computer systems are used more and more in areas where failures can lead to catastrophic events. To reduce risks, it becomes increasingly important to build dependable systems.
+
+In the event of a system failure it is desirable to fix the system as soon as possible in order to minimize the downtime of the system (maximize the availability). This can be accomplished by using different types of recovery techniques, e.g. check-pointing (create checkpoints to roll back/forward), fail over (switch to a redundant system), reboot. All these techniques require a certain amount of time to complete the recovery process, time that is very expensive. In order to minimize this time, techniques have been developed to anticipate upcoming failures.
+
+The work of this master thesis consists in designing a hardware accelerator for such a failure prediction algorithm. The algorithm in question has excellent prediction capabilities but needs a lot of computation power and hence computation time. The goal of the resulting accelerator will remedy this problem and offer an exact and fast solution for predicting failures.
