@@ -1,5 +1,6 @@
 \documentclass[mscthesis]{usiinfthesis}
 \usepackage{lipsum}
+\usepackage{color}
 \usepackage{listings}
 
 \lstdefinelanguage{algebra}
@@ -96,56 +97,15 @@ the work.
 \section{Accelerator}
 
 %===============================================================================
-\chapter{Implementation}
-%-------------------------------------------------------------------------------
-\section{Data Processing}
-%-------------------------------------------------------------------------------
-\section{Model Training}
-%-------------------------------------------------------------------------------
-\section{Sequence Processing}
-%-------------------------------------------------------------------------------
-\section{Classification}
+\chapter{Event-based Failure Prediction}
 
-%===============================================================================
-\chapter{Acceleration}
-Challanges of the acceleration
-\begin{itemize}
-    \item implementation of exp and log function (LUT, Taylor, ...)
-    \item floating points vs fixed points
-    \item precision
-    \item choice of accelerator (Type, Model)
-    \item find avaliable options for parallelization
-\end{itemize}
-
-Ideas on how to accelerate the online part of the algorithm
-\begin{itemize}
-    \item use high speed multiplier-accumulator (MAC) devices on a FPGA
-    \item use MACs only on integer numbers and compute FP later manually
-    \item minimize division (compute scaling factor once and then multiply)
-    \item if precision allows use pipelining to precompute the factor
-        $ b(j, o[k]) * v(i, j, k) $
-    \item precompute known factors and store them in order to simlify online
-        computation (e.g. parts of the kernel, classification thershold, ...).
-    \item \dots
-\end{itemize}
-
-Possible optimizations of the algorithm:
-\begin{itemize}
-    \item use a regularization term in the cost function to prevent overfitting
-    \item incorporate the offline part of the algorithm into the online part in
-        order to deal with model aging
-    \item \dots
-\end{itemize}
-%-------------------------------------------------------------------------------
-\section{Theoretical Analysis}
-%------------------------------------------
-\subsection{Theory Base}
 This section provides a brief overview of the computational steps done by the
-proposed algorithm. The following description should provide a complete
-blueprint of the adapted forward algorithm, that allows to implement it, but
-without any explications or proofs related to the formulation. To be able to
-understand the formal expression of the algorithm, first a definition of the
-used parameters is provided.
+proposed algorithm \cite{salfner08}.
+
+\emph{\color{red}brief description of the idea behind the algorithm, HSMM, Events, etc}
+
+To be able to understand the formal expression of the algorithm, first
+a definition of the used parameters is provided.
 \begin{itemize}
     \item N: number of states
     \item M: number of observation symbols
@@ -157,6 +117,13 @@ $ t_{k-1} $ is described as
 \begin{equation}
     d_k = t_k-t_{k-1}
 \end{equation}
+
+%-------------------------------------------------------------------------------
+\section{Data Processing}
+
+%-------------------------------------------------------------------------------
+\section{Model Training}
+
 One part of the algorithm is the model training. This part is not described
 here. The features to be trained by the model training are however important
 in this context because they are used by the adapted forward algorithm.
@@ -171,7 +138,14 @@ Following the features:
     \item $ \omega_{ij, r} $, the weights of the kernel $ r $
     \item $ \theta_{ij, r} $, the parameters of the kernel $ r $
 \end{itemize}
-The adapted forward algorithm is defined as follows:
+
+%-------------------------------------------------------------------------------
+\section{Sequence Processing}
+
+The following description will provide a complete blueprint of the adapted
+forward algorithm, that allows to implement it, but without any explanations or
+proofs related to the formulation. The adapted forward algorithm is defined as
+follows:
 \begin{equation}
     \label{eq:forward_init}
     \alpha_0(i) = \pi_{i}b_{s_i}(O_0) \\
@@ -215,6 +189,9 @@ $ \mu_{ij} $ and $ \sigma_{ij} $:
             1 - \exp \big (-\frac{d_k - \mu_{ij}}{\sqrt 2 \sigma_{ij}}\big )
         \Big ) \bigg ]
 \end{equation}
+
+\emph{\color{red}maybe use sequence likelihood and then explain about scaling}
+
 To prevent $ \alpha $ from going to zero very fast, at each step of the forward
 algorithm a scaling is performed:
 \begin{equation}
@@ -224,11 +201,21 @@ with
 \begin{equation}
     c_k = \frac{1}{\sum\limits_{i=1}^{N} \alpha_k(i)}
 \end{equation}
+
+\emph{\color{red}begin new sentence and explain log likelihood}
+
 then the sequence log-likelihood is computed:
 \begin{equation}
     \log(P(\boldsymbol{o}|\lambda)) = -\sum\limits_{k=1}^{L} \log c_k
 \end{equation}
-where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $,  and finally the
+where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $.
+
+%-------------------------------------------------------------------------------
+\section{Classification}
+
+\emph{\color{red}explain classification}
+
+and finally the
 classification is performed:
 \begin{equation}
     \label{eq:class}
@@ -251,6 +238,40 @@ To calculate $ \theta $, the following parameters need to be set:
     \item $ r_{\bar{F}F} $: false positive prediction
     \item $ r_{F\bar{F}} $: false negative prediction
 \end{itemize}
+
+%===============================================================================
+\chapter{Acceleration}
+Challanges of the acceleration
+\begin{itemize}
+    \item implementation of exp and log function (LUT, Taylor, ...)
+    \item floating points vs fixed points
+    \item precision
+    \item choice of accelerator (Type, Model)
+    \item find avaliable options for parallelization
+\end{itemize}
+
+Ideas on how to accelerate the online part of the algorithm
+\begin{itemize}
+    \item use high speed multiplier-accumulator (MAC) devices on a FPGA
+    \item use MACs only on integer numbers and compute FP later manually
+    \item minimize division (compute scaling factor once and then multiply)
+    \item if precision allows use pipelining to precompute the factor
+        $ b(j, o[k]) * v(i, j, k) $
+    \item precompute known factors and store them in order to simlify online
+        computation (e.g. parts of the kernel, classification thershold, ...).
+    \item \dots
+\end{itemize}
+
+Possible optimizations of the algorithm:
+\begin{itemize}
+    \item use a regularization term in the cost function to prevent overfitting
+    \item incorporate the offline part of the algorithm into the online part in
+        order to deal with model aging
+    \item \dots
+\end{itemize}
+
+%-------------------------------------------------------------------------------
+\section{Theoretical Analysis}
 
 %------------------------------------------
 \subsection{Pre-Computation of Known Parameters}
@@ -324,34 +345,113 @@ With the pre-computation described above
 \end{equation}
 of available ROM storage is necessary.
 
-\emph{Check speed and memory difference}
-
-Also with equation \ref{eq:forward_init} pre-computing should be considered.
-Instead of loading $ \pi $ into the ROM of the accelerator, a new
-matrix $ B^{'} $ of size $ N \times M $ where
-\begin{equation}
-    b_{il}^{'} = \pi_i b_{s_i}(O_l)
-\end{equation}
-can be computed and stored. The matrix $ B $ also needs to be stored because
-it is still used in equation \ref{eq:forward}. By using this pre-computation,
-the necessary ROM storage is now:
-\begin{equation}
-    NM(b_{\#bit} + b_{\#bit}^{'})
-        + N^2(c1_{\#bit}^{'} + c2_{\#bit}^{'} + c3_{\#bit})
-        \,\text{bit}
-\end{equation}
-
-\emph{Check speed and memory difference}
+\emph{\color{red}Check speed and memory difference}
 
 The $ \log $ of equation \ref{eq:class_thresh} can also be precomputed as it is
 used in equation \ref{eq:class} and all parameters are known before runtime.
 
+%------------------------------------------
+\subsection{Serial Implementation}
+\lstset{
+    language=Octave,
+    linewidth=0.95\linewidth,
+    breaklines=true,
+    numbers=left,
+    basicstyle=\ttfamily,
+    numberstyle=\tiny,
+    escapeinside={//*}{\^^M},
+    mathescape=true
+}
+\lstinputlisting{../accelerator/model/forward_s.m}
+\lstinputlisting{../accelerator/model/forward_step_s.m}
+\lstinputlisting{../accelerator/model/compute_v.m}
+
+%------------------------------------------
+\subsection{Parallelization}
+
+%------------------------------------------
+\subsection{Precision}
+
+
 %-------------------------------------------------------------------------------
-\section{Model implementation}
+\section{Choice of Accelerator Type}
+
+%------------------------------------------
+\subsection{CPU}
+\begin{itemize}
+    \item pro
+    \begin{itemize}
+        \item fast and easy implementation
+        \item high precision
+        \item high frequency
+    \end{itemize}
+    \item contra
+    \begin{itemize}
+        \item high power consumption
+        \item limited parallelization
+        \item large overhead for simple instructions
+        \item fixed architecture (memory, computation units)
+    \end{itemize}
+\end{itemize}
+
+%------------------------------------------
+\subsection{GPU}
+\begin{itemize}
+    \item pro
+    \begin{itemize}
+        \item parallelization options for a low price
+        \item fast onboard memory
+        \item high frequency
+        \item high precision
+        \item simple implementation
+    \end{itemize}
+    \item contra
+    \begin{itemize}
+        \item high power consumption
+        \item overhead for simple instructions
+        \item fixed architecture (memory, computation units)
+    \end{itemize}
+\end{itemize}
+
+%------------------------------------------
+\subsection{FPGA}
+\begin{itemize}
+    \item pro
+    \begin{itemize}
+        \item low power consumption
+        \item low overhead
+        \item flexibility
+    \end{itemize}
+    \item contra
+    \begin{itemize}
+        \item low frequency
+        \item parallelization is expensive
+        \item precision is expensive
+        \item complex implementation
+    \end{itemize}
+\end{itemize}
+
+%------------------------------------------
+\subsection{ASIC}
+\begin{itemize}
+    \item pro
+    \begin{itemize}
+        \item very low power consumption
+        \item no overhead
+        \item very flexible
+    \end{itemize}
+    \item contra
+    \begin{itemize}
+        \item very expensive
+        \item very complex implementation
+    \end{itemize}
+\end{itemize}
+
+%------------------------------------------
+\subsection{Conclusion}
+
 %-------------------------------------------------------------------------------
-\section{GPU-Acceleration}
-%-------------------------------------------------------------------------------
-\section{FPGA-Acceleration}
+\section{Implementation}
 
 %===============================================================================
 \chapter{Testing and Verification}
