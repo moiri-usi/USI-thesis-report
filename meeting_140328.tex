@@ -1,0 +1,132 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Short Sectioned Assignment
+% LaTeX Template
+% Version 1.0 (5/5/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Frits Wenneker (http://www.howtotex.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
+\usepackage{courier}
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+\usepackage[square,sort,numbers]{natbib}
+\usepackage{listings}
+
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+
+\usepackage{sectsty} % Allows customizing section commands
+\allsectionsfont{\centering \normalfont\scshape} % Make all sections centered, the default font and small caps
+
+\usepackage{fancyhdr} % Custom headers and footers
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+\lstset{
+	linewidth=0.95\linewidth,
+	breaklines=true,
+	numbers=left,
+    basicstyle=\footnotesize\ttfamily,
+	numberstyle=\tiny,
+	escapeinside={//*}{\^^M},
+	mathescape=true
+}
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{	
+\normalfont \normalsize 
+\textsc{Università della Svizzera Italiana} \\ [25pt] % Your university, school and/or department name(s)
+\horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
+\huge Meeting - 28.03.2014 \\ % The assignment title
+\horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
+}
+
+\author{Simon Maurer} % Your name
+
+\date{\normalsize\today} % Today's date or a custom date
+
+\begin{document}
+
+\maketitle % Print the title
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 1
+%----------------------------------------------------------------------------------------
+
+\section{Choice of Device}
+A reasonable board: Nexys 4 Artix-7 FPGA Board
+\footnote{http://www.xilinx.com/products/boards-and-kits/1-3YZNP5.htm}
+Having a look at the requirements for the exponential function on a FPGA:
+\begin{itemize}
+	\item \emph{double precision: 2024 slices + 3 DSP slices} on a Artix-7 100 T
+		FPGA from Xilinx, there is enough space for 7 exp functions in parallel.
+		One exp function can be fully pipelined \cite{RSSI08_Pottathuparambil}.
+	\item \emph{single precision: 522 slices + ? DSP slices} on a Artix-7 100 T
+		FPGA from Xilinx, there is enough space for 30 exp functions in
+		parallel. One exp function can be fully pipelined \cite{ICFPT05_Detrey}.
+\end{itemize}
+
+The algorithm exposes $ N^2 $ parallel exponential functions. Assuming
+$ N=100 $, for maximal performance a total amount of $ 10000 $ parallel
+exponential functions are needed (with pipelining this number can be reduced at
+a performance cost). No available FPGA can handle this amount of exp functions
+in parallel.
+
+\section{Extended Forward Algorithm}
+Initialization of the forward algorithm. The variables $ dk $ and $ ok $ need
+to be read from memory at each step  $ k $ (not shown in the code below).
+\lstinputlisting[language=Octave]{../accelerator/model/forward_s.m}
+By focusing on one step of the forward algorithm, it is important to note, that
+the extended forward algorithm differs only in the computation of the transition
+probabilities (function call in line 12) in comparison to the normal forward
+algorithm.
+\lstinputlisting[language=Octave]{../accelerator/model/forward_step_s.m}
+Following the most expensive part of the algorithm, due to the exponential
+function: the computation of the extended transition probabilities. The
+extended transition probabilities depend on the chosen kernels. Here only one
+kernel has been chosen (Gaussian cumulative distribution function).
+\lstinputlisting[language=Octave]{../accelerator/model/compute_v.m}
+During the meeting, the following decision has been taken: First focus only on
+the implementation of the forward algorithm (by omitting the computation of
+the extended transition probabilities) in FPGA.
+
+\section{Computation Intense Functions}
+A reference for computational intense functions has been named: (James M.)
+Krause.
+
+\section{Precision}
+Precision is a very important parameter in order to create an efficient
+accelerator. For the moment it is very difficult to define a necessary
+precision to get reasonable results. After the implementation of the forward
+algorithm on a FPGA it may be easier to discuss this problematic.
+
+\bibliographystyle{siam}
+\bibliography{biblio}
+
+\end{document}
