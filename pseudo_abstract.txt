@@ -1,5 +1,5 @@
 Title:
-Acceleration of a Extended Forward Algorithm for Failure Prediction on FPGA
+Acceleration of an Extended Forward Algorithm for Failure Prediction on FPGA
 
 Pseudo-Abstarct:
 In today's life computer systems are used more and more in areas where failures can lead to catastrophic events. To reduce risks, it becomes increasingly important to build dependable systems.
