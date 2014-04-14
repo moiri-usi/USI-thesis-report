@@ -2,6 +2,7 @@
 \usepackage{lipsum}
 \usepackage{color}
 \usepackage{listings}
+\DeclareMathOperator{\erf}{erf}
 
 \lstdefinelanguage{algebra}
 {morekeywords={import,sort,constructors,observers,transformers,axioms,if,
@@ -185,9 +186,8 @@ $ \mu_{ij} $ and $ \sigma_{ij} $:
 \begin{equation}
     \label{eq:kernel}
     \kappa_{ij, gauss}(d_k | \mu_{ij}, \sigma_{ij}) = 
-        0.5\bigg [1 + \frac{2}{\pi}\Big (
-            1 - \exp \big (-\frac{d_k - \mu_{ij}}{\sqrt 2 \sigma_{ij}}\big )
-        \Big ) \bigg ]
+    \frac{1}{2}\bigg [1 + \erf \big (\frac{d_k - \mu_{ij}}{\sqrt 2 \sigma_{ij}}\big )
+        \bigg ]
 \end{equation}
 
 \emph{\color{red}maybe use sequence likelihood and then explain about scaling}
@@ -357,14 +357,14 @@ used in equation \ref{eq:class} and all parameters are known before runtime.
     linewidth=0.95\linewidth,
     breaklines=true,
     numbers=left,
-    basicstyle=\ttfamily,
+    basicstyle=\footnotesize\ttfamily,
     numberstyle=\tiny,
     escapeinside={//*}{\^^M},
     mathescape=true
 }
 \lstinputlisting{../accelerator/model/forward_s.m}
 \lstinputlisting{../accelerator/model/forward_step_s.m}
-\lstinputlisting{../accelerator/model/compute_v.m}
+\lstinputlisting{../accelerator/model/compute_tp.m}
 
 %------------------------------------------
 \subsection{Parallelization}
