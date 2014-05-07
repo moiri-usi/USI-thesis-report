@@ -2,7 +2,19 @@
 \usepackage{lipsum}
 \usepackage{color}
 \usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+% customizations
 \DeclareMathOperator{\erf}{erf}
+\lstset{
+    linewidth=0.95\linewidth,
+    breaklines=true,
+    numbers=left,
+    basicstyle=\small\ttfamily,
+    numberstyle=\tiny,
+    escapeinside={//*}{\^^M},
+    mathescape=true
+}
 
 \lstdefinelanguage{algebra}
 {morekeywords={import,sort,constructors,observers,transformers,axioms,if,
@@ -15,7 +27,8 @@ morecomment=[l]{//s},
 
 \title{Accelerator for Event-based Failure Prediction} %compulsory
 \specialization{Embedded Systems Design}%optional
-\subtitle{Subtitle} %optional 
+\subtitle{Acceleration of an Extended Forward Algorithm for Failure Prediction
+    on FPGA}
 \author{Simon Maurer} %compulsory
 \begin{committee}
     \advisor{Prof.}{Miroslaw}{Malek} %compulsory
@@ -49,7 +62,6 @@ morecomment=[l]{//s},
 %\end{abstract}
 
 \begin{acknowledgements}
-\lipsum 
 \end{acknowledgements}
 
 \tableofcontents 
@@ -60,11 +72,44 @@ morecomment=[l]{//s},
 
 %===============================================================================
 \chapter{Introduction}
+\label{ch:intro}
+In today's live it becomes increasingly important, that computer systems are
+dependable. The reason being, that computer systems are used more and more in
+areas where the failure of such a system can lead to catastrophic events.
+Banking, public transportation and medical engineering are only a few examples
+of areas employing large and extremely complex systems. The increasing
+complexity of computer systems has a direct impact on their maintainability and
+testability. It is simply impossible to guarantee that a piece of software comes
+without any faults. On top of that, the same problematic arises with the
+hardware components which also may contain faulty parts but also get
+increasingly prone to failures due to decay of material.
+
+In the event of a system failure it is of course desirable to fix the system as
+soon as possible in order to minimize the downtime of the system (maximize the
+availability). This can be accomplished by using different types of recovery
+techniques, e.g. Check-pointing (create checkpoints to roll back/forward),
+system replication (switch to a redundant system), fail over (reboot). All these
+techniques require a certain amount of time to complete the recovery process,
+time that is very expensive. In order to minimize this time, techniques have
+been developed to anticipate upcoming failures. Such a technique is described in
+\cite{salfner08}.
+
+The work presents a new algorithm to predict failures and compares the results
+with other techniques. The accuracy of the presented algorithm to predict
+failures proves to be better compared to the other techniques, has however the
+drawback of increased complexity and hence increased computation time. It is
+very important to keep the computation overhead very low in order to maximize
+the time between the prediction of a failure and the actual event of the
+failure. One way to decrease the computation time is to design a hardware
+accelerator for the prediction algorithm. The design of such an accelerator is
+outlined in this document.
+
 %-------------------------------------------------------------------------------
 \section{Problem Statement}
+\label{ch:_intro_prob}
 %-------------------------------------------------------------------------------
 \section{Motivation}
-
+\label{ch:intro_mot}
 The email of Felix left some doubts to whether the acceleration of the
 algorithm is useful. The following list will give some arguments to justify
 the work.
@@ -87,18 +132,72 @@ the work.
 
 %-------------------------------------------------------------------------------
 \section{Contributions}
+\label{ch:intro_cont}
 %-------------------------------------------------------------------------------
 \section{Document Structure}
+\label{ch:intro_struct}
 
 %===============================================================================
 \chapter{State of the Art}
+\label{ch:art}
+This section provides an overview of the state of the art in the different
+fields of research that are relevant for the thesis. This includes failure
+prediction methods, existing solutions to accelerate failure prediction
+algorithms and acceleration techniques in general.
+
 %-------------------------------------------------------------------------------
 \section{Failure Prediction}
+\label{ch:art_pred}
+A very detailed overview of failure prediction methods is given in
+\cite{ACM10_Salfner}. The survey discusses i.a. the techniques used as
+comparison in the main reference
+\cite{lin88,IEEE90_lin,ICDM02_Vilalta,domeniconi02} as well as the technique
+described in the main reference \cite{salfner08}.
+
+More recent work uses hardware counters of a general purpose CPU and combines
+them with software instrumentation to analyze failures of single processes (e.g
+grep, flex, sed) \cite{FSE10_Yilmaz}. As industry heads more and more
+towards cloud computing, it has been proposed to use information of interaction
+between nodes (instead of analyzing single nodes) in order to analyze and
+predict failures of a distributed system \cite{IEEE12_Salfner,DSN10_Oliner}.
 %-------------------------------------------------------------------------------
 \section{Accelerator}
+\label{ch:art_acc}
+The main goal of this master thesis is to accelerate an adaptation of the
+forward algorithm. Proposals for a GPU based accelerator for the classic
+forward algorithm are described in \cite{neumann11,liu09}. Further, several
+proposals to accelerate the Viterbi algorithm (which is closely related to the
+forward algorithm) have been published: \cite{ASAP12_Azhar} presents an
+architecture for a lightweight Viterbi accelerator designed for an embedded
+processor datapath, \cite{IPDPS07_Jacob,ICS06_Maddimsetty,IPDPS07_Oliver}
+describe a FPGA based accelerator for protein sequence HHM search and
+\cite{IPDPS09_Walters} describes i.a. an approach to accelerate the Viterbi
+algorithm from the HMMER library using GPUs.
+
+Focusing on a more general approach for acceleration, \cite{ARITH13_Kadric}
+proposes an FPGA implementation of a parallel floating point accumulation and
+\cite{ITNG07_Hongyan} describes the implementation of a vector processor on
+FPGA.
+
+Quite some research has been done on the question what type of technology
+should be used to accelerate certain algorithms: \cite{SASP08_Che} presents
+a performance study of different applications accelerated on a multicore CPU,
+on a GPU and on a FPGA, \cite{FPL10_Jones} discusses the suitability of FPGA
+and GPU acceleration for high productivity computing systems (HPCS) without
+focusing on a specific application and \cite{ISVLSI10_Kestur} also focuses on
+HPCS but uses the Basic Linear Algebra Subroutines (BLAS) as comparison and
+also takes CPUs into account.
+
+It may be interesting to also think about an acceleration of the model
+training. Similar work has been done by accelerating SVMs (Support Vector Machines):
+\cite{FCCM09_Cadambi} describes a FPGA based accelerator for the SVM-SMO
+(support vector machine - sequential minimal optimization) algorithm used in
+the domain of machine learning and \cite{IEEE03_Anguita} proposes a new algorithm
+and its implementation on a FPGA for SVMs.
 
 %===============================================================================
 \chapter{Event-based Failure Prediction}
+\label{ch:event}
 
 This section provides a brief overview of the computational steps done by the
 proposed algorithm \cite{salfner08}.
@@ -121,9 +220,11 @@ $ t_{k-1} $ is described as
 
 %-------------------------------------------------------------------------------
 \section{Data Processing}
+\label{ch:event_data}
 
 %-------------------------------------------------------------------------------
 \section{Model Training}
+\label{ch:event_train}
 
 One part of the algorithm is the model training. This part is not described
 here. The features to be trained by the model training are however important
@@ -142,6 +243,7 @@ Following the features:
 
 %-------------------------------------------------------------------------------
 \section{Sequence Processing}
+\label{ch:event_sequ}
 
 The following description will provide a complete blueprint of the adapted
 forward algorithm, that allows to implement it, but without any explanations or
@@ -212,6 +314,7 @@ where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $.
 
 %-------------------------------------------------------------------------------
 \section{Classification}
+\label{ch:event_class}
 
 \emph{\color{red}explain classification}
 
@@ -241,6 +344,8 @@ To calculate $ \theta $, the following parameters need to be set:
 
 %===============================================================================
 \chapter{Acceleration}
+\label{ch:acc}
+
 Challanges of the acceleration
 \begin{itemize}
     \item implementation of exp and log function (LUT, Taylor, ...)
@@ -272,32 +377,49 @@ Possible optimizations of the algorithm:
 
 %-------------------------------------------------------------------------------
 \section{Theoretical Analysis}
+\label{ch:acc_theo}
 
 %------------------------------------------
 \subsection{Serial Implementation}
-\lstset{
-    language=Octave,
-    linewidth=0.95\linewidth,
-    breaklines=true,
-    numbers=left,
-    basicstyle=\footnotesize\ttfamily,
-    numberstyle=\tiny,
-    escapeinside={//*}{\^^M},
-    mathescape=true
-}
-\lstinputlisting{../accelerator/model/forward_s.m}
-\lstinputlisting{../accelerator/model/forward_step_s.m}
-\lstinputlisting{../accelerator/model/compute_tp.m}
+
+Forward Algorithm
+\lstinputlisting[language=Octave]{../accelerator/model/forward_s.m}
+Initialisation of each step
+\lstinputlisting[language=Octave]{../accelerator/model/forward_s_init.m}
+Computation per Observation Symbol
+\lstinputlisting[language=Octave]{../accelerator/model/forward_s_step.m}
+Extension of Forward Algorithm
+\lstinputlisting[language=Octave]{../accelerator/model/compute_tp.m}
+Script to run a sliding window over the sequenze
+\lstinputlisting[language=Octave]{../accelerator/model/main_script.m}
 
 %------------------------------------------
-\subsection{Parallelization}
+\subsection{Avaliable Parallelism}
 
 %------------------------------------------
-\subsection{Precision}
+\subsection{Scaling}
+Division is expensive but needed if scaling is applied. Scaling is useful to
+prevent that the continuous multiplication of floating points results in zero.
 
+If scaling is used, compute a scaling factor (only one division) and the use
+multiplication to scale (because division is a lot more complex than the
+multiplication).
+
+Keep the precision of the operands as low as possible to save memory and to
+reduce computation complexity.
+
+%------------------------------------------
+\subsection{Computation of Extension}
+This computation is very expensive but needs only to be computed once per dk.
+(Unlike the alphas, which need to be recomputed for the same dk because they
+depend on the previous alpha).
+
+Maybe use a very spezialized unit (ASIC) just for the computation of the
+cumulative distribution function.
 
 %-------------------------------------------------------------------------------
 \section{Choice of Accelerator Type}
+\label{ch:acc_choice}
 
 %------------------------------------------
 \subsection{CPU}
@@ -344,6 +466,7 @@ Possible optimizations of the algorithm:
         \item low power consumption
         \item low overhead
         \item flexibility
+        \item optimized floating point representation (small values)
     \end{itemize}
     \item contra
     \begin{itemize}
@@ -362,6 +485,7 @@ Possible optimizations of the algorithm:
         \item very low power consumption
         \item no overhead
         \item very flexible
+        \item optimized floating point representation (small values)
     \end{itemize}
     \item contra
     \begin{itemize}
@@ -375,31 +499,132 @@ Possible optimizations of the algorithm:
 
 %-------------------------------------------------------------------------------
 \section{Implementation}
+\label{ch:acc_imp}
+
+To design the accelerator, the top-down approach was applied: the algorithm is
+broken down into blocks, where each of them is broken down further until the
+basic functional blocs of the FPGA can be used for the implementation. The
+implementation follows then the bottom-up approach where each sub-block is
+implemented and tested. Completed blocks are grouped together to bigger blocks
+until finally there is only one big block remaining, describing the complete
+algorithm.
+
+%------------------------------------------
+\subsection{Design}
+\label{ch:acc_des}
+\begin{itemize}
+    \item parallelization of one of nested for-loop or pipeline the loops
+    \item fully pipelined MACC
+\end{itemize}
+
+The computation of the likelihood is divided in $ L $ steps: the
+initialization, $ L-2 $ identical intermediate steps and the finalization.
+$ N $ initial forward variables $ \alpha_0 $. Each intermediate step computes
+$ N $ intermediate forward variables $ \alpha_k $ and the final step calculates
+the last set of $ N $ forward variables $ \alpha_L $ as well as the likelihood.
+Each step takes the emission probabilities $ b_i(o_k) $ corresponding to the
+observation symbol $ o_k $ and constant factors as input. Because of the
+recursive nature of the algorithm, all steps (except the initialization) depend
+on the previously computed forward variables. For this reason a direct
+parallelization of the steps is not possible. However, as at every arrival of
+a new observation symbol, the last $ L $ elements of the observation symbol
+sequence are used to compute the likelihood, it is very beneficial to pipeline
+the steps. To do this, each step is realized in hardware and connected as
+represented in the figure \ref{fig:arch}. With this configuration, a likelihood
+is computed at every completion of a step with a latency of $ L * t_{step} $,
+where $ t_{step} $ is the time needed to complete the computation of one step.
+Additionally the configuration allows to load the constants $ TP $ and the
+emission probabilities $ b_i(o_k) $ for all steps at the same time, which
+reduces the load operations considerably.
+
+\emph{\color{red}example on how the pipeline works}
+%at time $ t $ a new observation symbol $ o_t $ arrives and the corresponding
+%emission probabilities $ B(o_t) $ are entered as input into all the steps of
+%the pipeline. At time $ t+1 $ all the pipeline steps have completed their
+%computation, enter their result as input into the next pipeline stage and
+%receive new emission probabilities $ B(o_{t+1}) $
+
+\begin{figure}[h]
+    \input{arch.tikz}
+    \centering
+    \def\svgwidth{\columnwidth}
+    \caption{Top View of the Architecture}
+    \label{fig:arch}
+\end{figure}
+
+Following, each dissimilar block is described in more detail, beginning with the
+initialization step. Figure \ref{fig:init} shows the necessary operation every
+i-th component. This can be fully parallelized if the structure is replicated
+$ N $ times.
+
+\begin{figure}[h]
+    \input{init.tikz}
+    \centering
+    \def\svgwidth{\columnwidth}
+    \caption{Initialization step}
+    \label{fig:init}
+\end{figure}
+
+%------------------------------------------
+\subsection{Precision}
+\label{ch:acc_prec}
+
+\begin{itemize}
+    \item use non-standard floating point representation, unsigned
+    \item increase exponent size to represent very small numbers
+    \item don't use scaling (division is expensive)
+    \item mantissa of 1st multiplication operand: 25bit
+    \item mantissa of 2nd multiplication operand: 18bit
+    \item exponent of stored values: 8bit, unigned
+    \item exponent of computed values: tbd, unsigned
+\end{itemize}
+
+%------------------------------------------
+\subsection{Data Storage Management}
+\label{ch:acc_mem}
+
+\begin{itemize}
+    \item real-time (time constraints on every Ps) vs on-line (use buffer to
+        optimize throughput)
+    \item memory heirarchy: at startup copy from flash to ram, then use pipeline
+        to preload values from ram into registers.
+\end{itemize}
 
 %===============================================================================
 \chapter{Testing and Verification}
+\label{ch:test}
 %-------------------------------------------------------------------------------
 \section{Log Standard}
+\label{ch:test_log}
 %-------------------------------------------------------------------------------
 \section{Metrics}
+\label{ch:test_log}
 %-------------------------------------------------------------------------------
 \section{Automated Log Generation}
+\label{ch:test_alog}
 %-------------------------------------------------------------------------------
 \section{Online Log Generation}
+\label{ch:test_olog}
 
 %===============================================================================
 \chapter{Results}
+\label{ch:res}
 %-------------------------------------------------------------------------------
 \section{Speedup}
+\label{ch:res_speed}
 %-------------------------------------------------------------------------------
 \section{Accuracy}
+\label{ch:res_prec}
 
 %===============================================================================
 \chapter{Conclusion}
+\label{ch:conc}
 %-------------------------------------------------------------------------------
 \section{Achievements}
+\label{ch:conc_ach}
 %-------------------------------------------------------------------------------
 \section{Future Work}
+\label{ch:conc_work}
 
 \nocite{*}
 
