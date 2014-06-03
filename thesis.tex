@@ -4,8 +4,8 @@
 \usepackage{listings}
 \usepackage{tikz}
 \usetikzlibrary{calc}
+
 % customizations
-\DeclareMathOperator{\erf}{erf}
 \lstset{
     linewidth=0.95\linewidth,
     breaklines=true,
@@ -15,7 +15,7 @@
     escapeinside={//*}{\^^M},
     mathescape=true
 }
-
+\DeclareMathOperator{\erf}{erf}
 \lstdefinelanguage{algebra}
 {morekeywords={import,sort,constructors,observers,transformers,axioms,if,
 else,end},
@@ -23,8 +23,8 @@ sensitive=false,
 morecomment=[l]{//s},
 }
 
-
-
+%===============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \title{Accelerator for Event-based Failure Prediction} %compulsory
 \specialization{Embedded Systems Design}%optional
 \subtitle{Acceleration of an Extended Forward Algorithm for Failure Prediction
@@ -71,6 +71,7 @@ morecomment=[l]{//s},
 \mainmatter
 
 %===============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Introduction}
 \label{ch:intro}
 In today's live it becomes increasingly important, that computer systems are
@@ -105,9 +106,11 @@ accelerator for the prediction algorithm. The design of such an accelerator is
 outlined in this document.
 
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Problem Statement}
 \label{ch:_intro_prob}
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Motivation}
 \label{ch:intro_mot}
 The email of Felix left some doubts to whether the acceleration of the
@@ -131,13 +134,16 @@ the work.
 \end{description}
 
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Contributions}
 \label{ch:intro_cont}
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Document Structure}
 \label{ch:intro_struct}
 
 %===============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{State of the Art}
 \label{ch:art}
 This section provides an overview of the state of the art in the different
@@ -146,6 +152,7 @@ prediction methods, existing solutions to accelerate failure prediction
 algorithms and acceleration techniques in general.
 
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Failure Prediction}
 \label{ch:art_pred}
 A very detailed overview of failure prediction methods is given in
@@ -160,7 +167,9 @@ grep, flex, sed) \cite{FSE10_Yilmaz}. As industry heads more and more
 towards cloud computing, it has been proposed to use information of interaction
 between nodes (instead of analyzing single nodes) in order to analyze and
 predict failures of a distributed system \cite{IEEE12_Salfner,DSN10_Oliner}.
+
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Accelerator}
 \label{ch:art_acc}
 The main goal of this master thesis is to accelerate an adaptation of the
@@ -176,7 +185,7 @@ algorithm from the HMMER library using GPUs.
 
 Focusing on a more general approach for acceleration, \cite{ARITH13_Kadric}
 proposes an FPGA implementation of a parallel floating point accumulation and
-\cite{ITNG07_Hongyan} describes the implementation of a vector processor on
+\cite{ITNG07_Yang} describes the implementation of a vector processor on
 FPGA.
 
 Quite some research has been done on the question what type of technology
@@ -196,6 +205,7 @@ the domain of machine learning and \cite{IEEE03_Anguita} proposes a new algorith
 and its implementation on a FPGA for SVMs.
 
 %===============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Event-based Failure Prediction}
 \label{ch:event}
 
@@ -219,10 +229,12 @@ $ t_{k-1} $ is described as
 \end{equation}
 
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Data Processing}
 \label{ch:event_data}
 
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Model Training}
 \label{ch:event_train}
 
@@ -242,6 +254,7 @@ Following the features:
 \end{itemize}
 
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Sequence Processing}
 \label{ch:event_sequ}
 
@@ -283,7 +296,7 @@ weights can be ignored. Equation \ref{eq:D} can then be simplified:
     \label{eq:D_fact}
     d_{ij}(d_k) = \kappa_{ij}(d_k | \theta_{ij})
 \end{equation}
-Choosing the gaussian cumulative distribution results in the kernel parameters
+Choosing the Gaussian cumulative distribution results in the kernel parameters
 $ \mu_{ij} $ and $ \sigma_{ij} $:
 \begin{equation}
     \label{eq:kernel}
@@ -292,7 +305,14 @@ $ \mu_{ij} $ and $ \sigma_{ij} $:
         \bigg ]
 \end{equation}
 
-\emph{\color{red}maybe use sequence likelihood and then explain about scaling}
+The last set of forward variables $ \alpha_L $ are then summed up to compute
+a probabilistic measure for the similarity of the observed sequence compared to
+the sequences in the training data set. This is called the sequence likelihood:
+\begin{equation}
+    \label{eq:P}
+    P(\boldsymbol{o}|\lambda) = \sum\limits_{i=1}^{N} \alpha_L(i)
+\end{equation}
+where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $.
 
 To prevent $ \alpha $ from going to zero very fast, at each step of the forward
 algorithm a scaling is performed:
@@ -304,15 +324,16 @@ with
     c_k = \frac{1}{\sum\limits_{i=1}^{N} \alpha_k(i)}
 \end{equation}
 
-\emph{\color{red}begin new sentence and explain log likelihood}
-
-then the sequence log-likelihood is computed:
+By applying scaling, instead of the sequence likelihood (equation \ref{eq:P}),
+the sequence log-likelihood must be computed:
 \begin{equation}
+    \label{eq:Plog}
     \log(P(\boldsymbol{o}|\lambda)) = -\sum\limits_{k=1}^{L} \log c_k
 \end{equation}
 where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $.
 
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Classification}
 \label{ch:event_class}
 
@@ -343,27 +364,25 @@ To calculate $ \theta $, the following parameters need to be set:
 \end{itemize}
 
 %===============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Acceleration}
 \label{ch:acc}
 
-Challanges of the acceleration
+Challenges of the acceleration
 \begin{itemize}
     \item implementation of exp and log function (LUT, Taylor, ...)
     \item floating points vs fixed points
     \item precision
     \item choice of accelerator (Type, Model)
-    \item find avaliable options for parallelization
+    \item find available options for parallelization
 \end{itemize}
 
 Ideas on how to accelerate the online part of the algorithm
 \begin{itemize}
     \item use high speed multiplier-accumulator (MAC) devices on a FPGA
     \item use MACs only on integer numbers and compute FP later manually
-    \item minimize division (compute scaling factor once and then multiply)
-    \item if precision allows use pipelining to precompute the factor
-        $ b(j, o[k]) * v(i, j, k) $
-    \item precompute known factors and store them in order to simlify online
-        computation (e.g. parts of the kernel, classification thershold, ...).
+    \item precompute known factors and store them in order to simplify online
+        computation (e.g. parts of the kernel, classification threshold, ...).
     \item \dots
 \end{itemize}
 
@@ -376,12 +395,15 @@ Possible optimizations of the algorithm:
 \end{itemize}
 
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Theoretical Analysis}
 \label{ch:acc_theo}
 
-%------------------------------------------
+%-------------------------------------------------------------------------------
 \subsection{Serial Implementation}
 
+Script to run a sliding window over the sequence
+\lstinputlisting[language=Octave]{../accelerator/model/main_script.m}
 Forward Algorithm
 \lstinputlisting[language=Octave]{../accelerator/model/forward_s.m}
 Initialisation of each step
@@ -390,75 +412,139 @@ Computation per Observation Symbol
 \lstinputlisting[language=Octave]{../accelerator/model/forward_s_step.m}
 Extension of Forward Algorithm
 \lstinputlisting[language=Octave]{../accelerator/model/compute_tp.m}
-Script to run a sliding window over the sequenze
-\lstinputlisting[language=Octave]{../accelerator/model/main_script.m}
 
-%------------------------------------------
-\subsection{Avaliable Parallelism}
+%-------------------------------------------------------------------------------
+\subsection{Available Parallelism}
 
-%------------------------------------------
-\subsection{Scaling}
-Division is expensive but needed if scaling is applied. Scaling is useful to
-prevent that the continuous multiplication of floating points results in zero.
+\begin{itemize}
+    \item pipelining
+    \item replication of independent blocks
+\end{itemize}
 
-If scaling is used, compute a scaling factor (only one division) and the use
-multiplication to scale (because division is a lot more complex than the
-multiplication).
+%-------------------------------------------------------------------------------
+\subsection{Scaling and Data Representation}
 
-Keep the precision of the operands as low as possible to save memory and to
-reduce computation complexity.
+Scaling may be applied to prevent that the continuous multiplication of numbers
+smaller than one (e.g. probabilities) result in zero because of the limited
+accuracy by digitally representing fractional numbers. Scaling does not
+influence the order of complexity of the algorithm. By introducing scaling, the
+complexity of calculating one $ \alpha_k $ vector goes from $ N^2 $ (no
+scaling) to $ N^2 + 2N + 1 $ (scaling), which is the same order $ O(N^2) $.
+However, the introduction of scaling may increase the usage of recourses
+significantly: In order to scale $ \alpha_k $, the division operation is used
+to compute the scaling factor.  Division is far more complex than
+multiplication and hence uses more recourses.  Additionally, instead of the
+sequence likelihood (equation \ref{eq:P}) the sequence log-likelihood (equation
+\ref{eq:Plog}) needs to be computed, with the even more complex log operation.
 
-%------------------------------------------
+In order to limit the amount of necessary division operations, it is beneficial
+to consider the following: Rather than scaling each element of $ \alpha_k $ by
+dividing it by a scaling factor ($ N $ divisions), first the inverse of the
+scaling factor can be computed, which is then multiplied with each element of
+$ \alpha_k $ (one division and $ N $ multiplications). 
+
+To compute the log-likelihood, $ N $ log and $ N $ sum operations are
+necessary, in comparison to $ N $ sum operations for the likelihood. In terms
+of memory, the log-likelihood is more complex because the scaling coefficients
+of each $ \alpha_k $ are used and need to be stored, while for the likelihood
+only the last set of forward variables $ \alpha_L $ are used.
+
+Another aspect to consider is the choice of data representation (floating point
+vs. fixed point). This depends on one hand on the necessary precision and on
+the other hand on the choice of accelerator type.  While general purpose
+hardware such as CPU, GPU and DSP (to some degree) offer an abstraction to make
+the representation type transparent to the developer, specialized hardware such
+as FPGA or ASCI offer no such abstraction. For the later devices, floating
+point operations increase the complexity of the hardware design and the
+necessary hardware resources considerably. In terms of performance, general
+purpose devices benefit also from a sparse usage of floating point values. The
+complexity of the software development however is only marginally or not
+affected at all by the choice of data representation.
+
+If by choice, scaling is omitted, a fixed point representation will not be
+possible, due to the rapid convergence towards zero by continuously multiplying
+probabilities together. This implies, that by omitting scaling to save
+resources, a floating point representation must be used, which again increases
+the resource requirements or has a negative impact on performance (or both).
+
+The trade-off between the choice of using scaling or not versus the choice of
+the precision and the data representation, will be analyzed in more detail in
+chapter \ref{ch:acc_des}, when the technology of the accelerator has been
+chosen.
+
+Scaling in general:
+\begin{equation}
+    \sum\limits_{i=1}^{N} \pi_i = 1
+\end{equation}
+\begin{equation}
+    \sum\limits_{j=1}^{N} v_{ij}(d_k) = 1
+\end{equation}
+\begin{equation}
+    \sum\limits_{j=1}^{M} b_{ij} = 1
+\end{equation}
+on average each\\
+$ \alpha_1 = \frac{1}{NM} $\\
+$ \alpha_2 = N\frac{1}{NM}\frac{1}{NM} = \frac{1}{NM^2} $\\
+$ \alpha_3 = N\frac{1}{NM}\frac{1}{NM^2} = \frac{1}{NM^3} $\\
+\dots\\
+$ \alpha_L = \frac{1}{NM^L} $\\
+assuming no precision loss at each computational step $ k $, on average a
+scaling factor of $ \frac{1}{M} $ is necessary in each step $ k $.
+
+%-------------------------------------------------------------------------------
 \subsection{Computation of Extension}
 This computation is very expensive but needs only to be computed once per dk.
 (Unlike the alphas, which need to be recomputed for the same dk because they
 depend on the previous alpha).
 
-Maybe use a very spezialized unit (ASIC) just for the computation of the
+Maybe use a very specialized unit (ASIC) just for the computation of the
 cumulative distribution function.
 
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Choice of Accelerator Type}
 \label{ch:acc_choice}
 
-%------------------------------------------
+%-------------------------------------------------------------------------------
 \subsection{CPU}
 \begin{itemize}
     \item pro
     \begin{itemize}
-        \item fast and easy implementation
-        \item high precision
-        \item high frequency
+        \item fast and easy implementation (availability of /, exp, log,
+            floating points)
+        \item high precision (double, long double)
+        \item high frequency (up to 3 GHz)
     \end{itemize}
     \item contra
     \begin{itemize}
         \item high power consumption
-        \item limited parallelization
-        \item large overhead for simple instructions
+        \item limited parallelization (limited number of cores)
+        \item large overhead (because of instruction pipeline)
         \item fixed architecture (memory, computation units)
     \end{itemize}
 \end{itemize}
 
-%------------------------------------------
+%-------------------------------------------------------------------------------
 \subsection{GPU}
 \begin{itemize}
     \item pro
     \begin{itemize}
-        \item parallelization options for a low price
-        \item fast onboard memory
+        \item SIMD: a lot of streaming processors for a low price
+        \item a lot of fast onboard memory
         \item high frequency
         \item high precision
-        \item simple implementation
+        \item simple implementation (availability of /, exp, log,
+            floating points)
     \end{itemize}
     \item contra
     \begin{itemize}
         \item high power consumption
-        \item overhead for simple instructions
+        \item overhead for simple instructions (instruction pipeline)
         \item fixed architecture (memory, computation units)
     \end{itemize}
 \end{itemize}
 
-%------------------------------------------
+%-------------------------------------------------------------------------------
 \subsection{FPGA}
 \begin{itemize}
     \item pro
@@ -477,7 +563,7 @@ cumulative distribution function.
     \end{itemize}
 \end{itemize}
 
-%------------------------------------------
+%-------------------------------------------------------------------------------
 \subsection{ASIC}
 \begin{itemize}
     \item pro
@@ -494,12 +580,29 @@ cumulative distribution function.
     \end{itemize}
 \end{itemize}
 
-%------------------------------------------
+%-------------------------------------------------------------------------------
 \subsection{Conclusion}
+\begin{itemize}
+    \item target is an embedded system (low power)
+    \item optimize memory hierarchy
+    \item student budget
+    \item -> use FPGA
+    \item only standard forward algorithm
+    \item do not use scaling because of division. Instead use custom FP
+        representation
+\end{itemize}
+
+basic implementation without extension and scaling
+\lstinputlisting[language=Octave]{../accelerator/model/forward_s_basic.m}
 
 %-------------------------------------------------------------------------------
-\section{Implementation}
-\label{ch:acc_imp}
+%===============================================================================
+\section{Design and Implementation}
+\label{ch:acc_des}
+\begin{itemize}
+    \item parallelization of one of nested for-loop or pipeline the loops
+    \item fully pipelined MACC
+\end{itemize}
 
 To design the accelerator, the top-down approach was applied: the algorithm is
 broken down into blocks, where each of them is broken down further until the
@@ -509,13 +612,93 @@ implemented and tested. Completed blocks are grouped together to bigger blocks
 until finally there is only one big block remaining, describing the complete
 algorithm.
 
-%------------------------------------------
-\subsection{Design}
-\label{ch:acc_des}
+%-------------------------------------------------------------------------------
+\subsection{Precision}
+
+Modern FPGAs contain hardware blocks (DSP slices) that are heavily optimized
+for multiply-accumulate operations as they are often used for DSP applications.
+These devices only operate on integer values. However, the forward algorithm
+requires to multiply and accumulate probabilities, i.e. fractional numbers. To
+being able to use the DSP slices of the FPGA, some hardware must be built
+around such a slice in order to get a hardware block that can handle the
+multiplication and accumulation of probabilities. To do this, the choice of
+data representation must be made (floating point vs fixed point). First the
+assumption that all operations must be done with floating point numbers is
+discussed.
+
+\emph{\color{red}the following points need to be explained in more detail}
+
+Floating Point Facts:
+In order to multiply two floating point numbers, the mantissas of
+both numbers are multiplied and the exponents are added (the sign can be
+ignored, as probabilities are always positive). For the multiplication of the
+mantissas the DSP slices can be used. In parallel to this operation, an
+external adder can add up the exponents. Now the tricky part: to being able to
+add floating point numbers the exponents of the numbers must be equal. To
+achieve that, the difference of the two exponents is calculated and then the
+mantissa of the number with the lower exponent must be shifted by this
+difference (and possibly rounded/truncated). This process is called
+normalizing. Then the mantissas can be added. Finally the resulting value
+needs to be normalized again.
+
+Scaling: By using floating points, scaling becomes superfluous because the
+exponent allows to represent very small numbers (not respecting IEEE
+representations).
+
+Truncation: after the multiply accumulate operation the resulting mantissa of
+48 bits must be truncated to 25 bits. To achieve better results, a rounding
+operation can be applied.
+
+Fixed Point Facts:
+before each multiplication, the operands need to be reduced from 48 to 18 resp
+25 bits. This must be done by either truncating/rounding the final value or by
+scaling or by doing both.
+
+Scaling: The proposed scaling method is not usable in this implementation
+because of the division operation. Instead, a scaling in base of 2 should be
+used (shift): In every clock cycle a new value is added to the previous one.
+The masked result can be compared to a bit stream of zeros. A match directly
+gives the amount of leading zeros (using the number of times the mask has been
+shifted). If there is no match, shift the mask and compare in the next cycle.
+This operation is done with every alpha, while the lowest value of leading
+zeros is kept. Using this method, in most cases at the end of adding up all the
+values, the least number of leading zeros of the N alphas will be known. If in
+the worst case after the addition of the last alpha-component there is
+a non-match, the pipeline must be stalled and the right leading zeros number
+must be found by shifting the mask further to the left. To do the masked
+comparison, the pattern comparing unit of the DSP-slice of the FPGA can be
+used. The stored values $ \pi $, $ B $ and $ TP $ can be preprocessed and
+scaled, in order to reduce the number of minimal leading zeros to zero. These
+scaling factors will then be used to recompute the real sequence likelihood.
+
+Truncation: a simple solution is to chop off the leading zeros (as counted) and
+truncate the value by only using the following 25 bits after the last leading
+zero. A more precise method would be to use rounding.
+
+%-------------------------------------------------------------------------------
+\subsection{Data Storage Management}
+
+\emph{\color{red}the following points need to be explained in more detail}
+
+Facts:
+in each kth step $ N^2*TP $ values and $ N*B $ values are necessary. In case of
+the parallel version, each clock cycle $ N*TP $ and one B value must be made
+available. In case of the serial version one TP or B vale must be made
+available. By reading directly from the RAM, 16 bits can be read with a bus
+frequency of 104MHz. Running the pipeline at 52MHz, the necessary data can be
+provided at each clock cycle in case of the serial implementation. If the
+parallel implementation should be used, an internal memory must be built.
+
 \begin{itemize}
-    \item parallelization of one of nested for-loop or pipeline the loops
-    \item fully pipelined MACC
+    \item real-time (time constraints on every Ps) vs on-line (use buffer to
+        optimize throughput)
+    \item memory hierarchy: at startup copy from flash to ram, then use pipeline
+        to preload values from ram into registers.
 \end{itemize}
+
+%-------------------------------------------------------------------------------
+\subsection{Top View}
+\emph{\color{red}better title?}
 
 The computation of the likelihood is divided in $ L $ steps: the
 initialization, $ L-2 $ identical intermediate steps and the finalization.
@@ -526,23 +709,28 @@ Each step takes the emission probabilities $ b_i(o_k) $ corresponding to the
 observation symbol $ o_k $ and constant factors as input. Because of the
 recursive nature of the algorithm, all steps (except the initialization) depend
 on the previously computed forward variables. For this reason a direct
-parallelization of the steps is not possible. However, as at every arrival of
+parallelization of the steps is not possible. However, at every arrival of
 a new observation symbol, the last $ L $ elements of the observation symbol
-sequence are used to compute the likelihood, it is very beneficial to pipeline
-the steps. To do this, each step is realized in hardware and connected as
-represented in the figure \ref{fig:arch}. With this configuration, a likelihood
-is computed at every completion of a step with a latency of $ L * t_{step} $,
-where $ t_{step} $ is the time needed to complete the computation of one step.
-Additionally the configuration allows to load the constants $ TP $ and the
-emission probabilities $ b_i(o_k) $ for all steps at the same time, which
-reduces the load operations considerably.
+sequence are used to compute the likelihood. Hence, it is very beneficial to
+pipeline the steps. To do this, each step corresponds to a pipeline stage and is
+realized in hardware and connected as represented in the figure \ref{fig:arch}.
+With this configuration, a likelihood is computed at every completion of a step
+with a latency of $ L * t_{step_{max}} $, where $ t_{step_{max}} $ is the time
+needed to complete the computation of the most complex step (each stage of the
+pipeline must take the same amount of clock cycles). Additionally the
+configuration allows to load the constants $ TP $ and the emission
+probabilities $ b_i(o_k) $ for all steps at the same time, which reduces the
+load operations considerably. In the following sections, each dissimilar block
+is described in more detail.
 
-\emph{\color{red}example on how the pipeline works}
+%\emph{\color{red}example on how the pipeline works}
 %at time $ t $ a new observation symbol $ o_t $ arrives and the corresponding
-%emission probabilities $ B(o_t) $ are entered as input into all the steps of
+%emission probabilities $ B(o_t) $ are entered as input into all the stages of
 %the pipeline. At time $ t+1 $ all the pipeline steps have completed their
 %computation, enter their result as input into the next pipeline stage and
 %receive new emission probabilities $ B(o_{t+1}) $
+
+\emph{\color{red}add step k to the figure \ref{fig:arch}}
 
 \begin{figure}[h]
     \input{arch.tikz}
@@ -552,61 +740,100 @@ reduces the load operations considerably.
     \label{fig:arch}
 \end{figure}
 
-Following, each dissimilar block is described in more detail, beginning with the
-initialization step. Figure \ref{fig:init} shows the necessary operation every
-i-th component. This can be fully parallelized if the structure is replicated
-$ N $ times.
+%-------------------------------------------------------------------------------
+\subsection{Initialization}
 
+Figure \ref{fig:init_s} shows the necessary operation to compute every i-th
+component of the first forward variable $ \alpha_1 $ in the initialization
+step.  The $ N $ components of $ \alpha_1 $ can be computed one by one when
+only one such structure is implemented in hardware. Assuming a fully
+pipelineable multiplier, one component of $ \alpha_1 $ appears in the output
+register at every cycle (with a latency of $ S $ cycles, where $ S $ is the
+number of pipeline stages in the multiplier). To compute all $ N $ components
+of $ \alpha_1 $ with this structure, $ N + S $ cycles are necessary.
+Alternatively the complete initialization can be fully parallelized if the
+structure \ref{fig:init_s} is replicated $ N $ times. In this case, all
+$ N $ components of $ \alpha_1 $ appear at the same time, after $ S $ cycles in
+the output registers. If such a heavy parallelization is useful will be
+analyzed after all stages have been described.
+
+%\emph{\color{red}add input registers to figure \ref{fig:init}}
+
+%\begin{figure}[h]
+%    \input{arch_init.tikz}
+%    \centering
+%    \def\svgwidth{\columnwidth}
+%    \caption{Initialization step}
+%    \label{fig:init}
+%\end{figure}
 \begin{figure}[h]
-    \input{init.tikz}
-    \centering
-    \def\svgwidth{\columnwidth}
-    \caption{Initialization step}
-    \label{fig:init}
+    \includegraphics[width=1\columnwidth]{arch_init_s.png}
+    \caption{Initialisation step with one MACC}
+    \label{fig:init_s}
 \end{figure}
 
-%------------------------------------------
-\subsection{Precision}
-\label{ch:acc_prec}
+%-------------------------------------------------------------------------------
+\subsection{k-th Forward Variable}
+\emph{\color{red}better title?}
 
 \begin{itemize}
-    \item use non-standard floating point representation, unsigned
-    \item increase exponent size to represent very small numbers
-    \item don't use scaling (division is expensive)
-    \item mantissa of 1st multiplication operand: 25bit
-    \item mantissa of 2nd multiplication operand: 18bit
-    \item exponent of stored values: 8bit, unigned
-    \item exponent of computed values: tbd, unsigned
+    \item one pipelined MACC for the computation of all elements
+    \item $ N $ pipelined MACC, each computing one $ \alpha_k $
+    \item use optimized Matrix-Vector-Vector multiplication
+        $ \alpha_{k+1} = TP * \alpha_k * B(o_k) $
+        \cite{FCCM12_Kestur, ITNG07_Yang}
 \end{itemize}
 
-%------------------------------------------
-\subsection{Data Storage Management}
-\label{ch:acc_mem}
+\begin{figure}[h]
+    \includegraphics[width=1\columnwidth]{arch_step_s.png}
+    \caption{k-th step with one MACC unit}
+    \label{fig:step_s}
+\end{figure}
+\begin{figure}[h]
+    \includegraphics[width=1\columnwidth]{./arch_shift_reg_s.png}
+    \caption{Example of input shift register with N=2}
+    \label{fig:shift_reg_s}
+\end{figure}
 
-\begin{itemize}
-    \item real-time (time constraints on every Ps) vs on-line (use buffer to
-        optimize throughput)
-    \item memory heirarchy: at startup copy from flash to ram, then use pipeline
-        to preload values from ram into registers.
-\end{itemize}
+\begin{figure}[h]
+    \includegraphics[width=1\columnwidth]{arch_step_p.png}
+    \caption{k-th step with $ N+1 $ MACC units and integrated computation of P
+        (which is only needed at the last step)}
+    \label{fig:step_p}
+\end{figure}
+
+%-------------------------------------------------------------------------------
+\subsection{Balancing Pipeline Stages}
 
 %===============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Testing and Verification}
 \label{ch:test}
+
 %-------------------------------------------------------------------------------
-\section{Log Standard}
-\label{ch:test_log}
+%===============================================================================
+\section{Device}
+\label{ch:test_dev}
+
+\begin{itemize}
+    \item Nexys4 board with Artix-7 FPGA
+    \item limited recourses -> proof of concept
+    \item bord hardware for testing
+\end{itemize}
+
 %-------------------------------------------------------------------------------
-\section{Metrics}
-\label{ch:test_log}
+%===============================================================================
+\section{Relation to Proposed Algorithm}
+\label{ch:test_prop}
+
 %-------------------------------------------------------------------------------
-\section{Automated Log Generation}
-\label{ch:test_alog}
+\subsection{Log Standard}
+
 %-------------------------------------------------------------------------------
-\section{Online Log Generation}
-\label{ch:test_olog}
+\subsection{Metrics}
 
 %===============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Results}
 \label{ch:res}
 %-------------------------------------------------------------------------------
@@ -617,12 +844,17 @@ $ N $ times.
 \label{ch:res_prec}
 
 %===============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusion}
 \label{ch:conc}
+
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Achievements}
 \label{ch:conc_ach}
+
 %-------------------------------------------------------------------------------
+%===============================================================================
 \section{Future Work}
 \label{ch:conc_work}
 
@@ -631,6 +863,7 @@ $ N $ times.
 \appendix %optional, use only if you have an appendix
 
 %===============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Some material}
 %\section{It's over\dots}
 
