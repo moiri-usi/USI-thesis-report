@@ -3,17 +3,50 @@
 \usepackage{color}
 \usepackage{listings}
 \usepackage{tikz}
+\usepackage{pstricks}
+\usepackage{auto-pst-pdf}
+\usepackage{array}
+\usepackage{colortbl}
 \usetikzlibrary{calc}
 
 % customizations
+\definecolor{mygreen}{rgb}{0,0.4,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+\definecolor{mysmokegray}{rgb}{0.9,0.9,0.9}
+
+%\newtoggle{InString}{}% Keep track of if we are within a string
+%\togglefalse{InString}% Assume not initally in string
+%
+%\newcommand*{\ColorIfNotInString}[1]{\iftoggle{InString}{#1}{\color{mymauve}#1}}%
+%\newcommand*{\ProcessQuote}[1]{#1\iftoggle{InString}{\global\togglefalse{InString}}{\global\toggletrue{InString}}}%
+%\lstset{literate=%
+%    {"}{{{\ProcessQuote{"}}}}1% Disable coloring within double quotes
+%    {'}{{{\ProcessQuote{'}}}}1% Disable coloring within single quote
+%    {0}{{{\ColorIfNotInString{0}}}}1
+%    {1}{{{\ColorIfNotInString{1}}}}1
+%    {2}{{{\ColorIfNotInString{2}}}}1
+%    {3}{{{\ColorIfNotInString{3}}}}1
+%    {4}{{{\ColorIfNotInString{4}}}}1
+%    {5}{{{\ColorIfNotInString{5}}}}1
+%    {6}{{{\ColorIfNotInString{6}}}}1
+%    {7}{{{\ColorIfNotInString{7}}}}1
+%    {8}{{{\ColorIfNotInString{8}}}}1
+%    {9}{{{\ColorIfNotInString{9}}}}1
+%}
+
 \lstset{
-    linewidth=0.95\linewidth,
+    backgroundcolor=\color{mysmokegray},
+    basicstyle=\footnotesize\ttfamily,
     breaklines=true,
-    numbers=left,
-    basicstyle=\small\ttfamily,
-    numberstyle=\tiny,
+    captionpos=b,
+    commentstyle=\itshape\color{mygreen},
     escapeinside={//*}{\^^M},
-    mathescape=true
+    keywordstyle=\bfseries\color{blue},
+    linewidth=0.95\linewidth,
+    mathescape=true,
+    numbers=left,
+    numberstyle=\tiny\color{mygray},
 }
 \DeclareMathOperator{\erf}{erf}
 \lstdefinelanguage{algebra}
@@ -67,6 +100,7 @@ morecomment=[l]{//s},
 \tableofcontents 
 \listoffigures %optional
 \listoftables %optional
+\lstlistoflistings
 
 \mainmatter
 
@@ -225,6 +259,7 @@ a definition of the used parameters is provided.
 The delay of the event at time $ t_k $ with respect to the event at time
 $ t_{k-1} $ is described as
 \begin{equation}
+\label{eq:delay}
     d_k = t_k-t_{k-1}
 \end{equation}
 
@@ -258,7 +293,7 @@ Following the features:
 \section{Sequence Processing}
 \label{ch:event_sequ}
 
-The following description will provide a complete blueprint of the adapted
+The following description will provide a complete blueprint of the extended
 forward algorithm, that allows to implement it, but without any explanations or
 proofs related to the formulation. The adapted forward algorithm is defined as
 follows:
@@ -305,6 +340,10 @@ $ \mu_{ij} $ and $ \sigma_{ij} $:
         \bigg ]
 \end{equation}
 
+\emph{\color{red}explain difference to the non-extended forward algorithm and
+    introduce a standard notation for the transition probabilities (eg v: extended
+a: basic, tp: general) stick to this in the whole document}
+
 The last set of forward variables $ \alpha_L $ are then summed up to compute
 a probabilistic measure for the similarity of the observed sequence compared to
 the sequences in the training data set. This is called the sequence likelihood:
@@ -317,10 +356,12 @@ where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $.
 To prevent $ \alpha $ from going to zero very fast, at each step of the forward
 algorithm a scaling is performed:
 \begin{equation}
+    \label{eq:scaled}
     \alpha_k(i) = c_k \alpha_k(i)
 \end{equation}
 with
 \begin{equation}
+    \label{eq:scaling_factor}
     c_k = \frac{1}{\sum\limits_{i=1}^{N} \alpha_k(i)}
 \end{equation}
 
@@ -353,6 +394,11 @@ with
     \theta = \frac{(r_{\bar{F}F} - r_{\bar{F}\bar{F}})P(c_{\bar{F}})}
         {(r_{F \bar{F}} - r_{FF})P(c_{F})}
 \end{equation}
+
+\emph{\color{red}classification without scaling}
+
+\emph{\color{red}Multi-class classification without scaling?}
+
 To calculate $ \theta $, the following parameters need to be set:
 \begin{itemize}
     \item $ P(c_{\bar{F}}) $: prior of non-failure class
@@ -365,92 +411,333 @@ To calculate $ \theta $, the following parameters need to be set:
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Acceleration}
-\label{ch:acc}
+\chapter{Theoretical Analysis of the Forward Algorithm}
+\label{ch:analysis}
 
-Challenges of the acceleration
+\emph{\color{red}introduction to the chapter}
 \begin{itemize}
-    \item implementation of exp and log function (LUT, Taylor, ...)
-    \item floating points vs fixed points
-    \item precision
-    \item choice of accelerator (Type, Model)
+    \item serial implementation and complexity
     \item find available options for parallelization
-\end{itemize}
-
-Ideas on how to accelerate the online part of the algorithm
-\begin{itemize}
-    \item use high speed multiplier-accumulator (MAC) devices on a FPGA
-    \item use MACs only on integer numbers and compute FP later manually
-    \item precompute known factors and store them in order to simplify online
-        computation (e.g. parts of the kernel, classification threshold, ...).
-    \item \dots
-\end{itemize}
-
-Possible optimizations of the algorithm:
-\begin{itemize}
-    \item use a regularization term in the cost function to prevent overfitting
-    \item incorporate the offline part of the algorithm into the online part in
-        order to deal with model aging
-    \item \dots
+    \item floating points vs fixed points
+    \item implementation of exp and log function (LUT, Taylor, ...)
+    \item choice of accelerator (Type, Model)
 \end{itemize}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Theoretical Analysis}
-\label{ch:acc_theo}
+\section{Serial Implementation and Complexity}
+\label{ch:analysis_serial}
+
+The sequential implementation of the basic forward algorithm is represented in
+listing \ref{list:forward_basic}. It consist of three parts: the initialization
+step, the computation of consecutive forward variables and the final step,
+where the likelihood is computed. The initial $ \alpha $ variable is computed
+by multiplying the initial state probability with the emission probability of
+the first observation symbol of the sequence (cf equation
+\ref{eq:forward_init}). The computation of the following forward variables
+consists of three nested loops: the outer loop iterates over the $ L $ sets of
+$ N $ $ \alpha $ variables, where each variable depends on the prior computed
+$ \alpha $ variable and the k-th observation symbol of a sequence. The first
+inner loop iterates over the $ N $ $ \alpha $ variables of one set, where each
+variable is computed with the most inner loop. The two nested inner loops form
+the Matrix-Vector-Vector multiplication
+\begin{equation}
+    \label{eq:mvv}
+    \alpha_{k+1} = TP * \alpha_k \cdot B(o_k)
+\end{equation}
+where $ \alpha_k $ is a vector of size $ N $ of the prior computed $ \alpha
+$ variables, $ TP $ a matrix of size $ N \times N $ containing the transition
+probabilities and $ B(o_k) $ a vector of size $ N $ containing the emission
+probabilities of the k-th observation symbol. Note that the first
+multiplication is a Matrix-Vector multiplication that results in a vector,
+which is then multiplied element-wise with the vector $ B(o_k) $. The equation
+\ref{eq:forward} describes the formal definition of the forward algorithm. In
+the last step the likelihood is computed, by summing up all elements of the
+last forward variable $ \alpha_L $ (cf equation \ref{eq:P}).
+
+\lstinputlisting[language=Octave,
+    caption=Forward Algorithm,
+    float,
+    label=list:forward_basic]
+    {../accelerator/model/forward_s_basic.m}
+
+As proposed by the reference work, the forward variables can be scaled, in
+order to prevent the result from getting very small due to the continuous
+multiplication of probabilities. The implementation of the proposed scaling
+method is shown in listing \ref{list:forward_scaling}. The scaling is formally
+defined by the equations \ref{eq:scaled} and \ref{eq:scaling_factor}. Due to the
+scaling, instead of the likelihood, the log-likelihood is computed. Equation
+\ref{eq:Plog} gives the formal definition.
+
+\lstinputlisting[language=Octave,
+    caption=Forward Algorithm,
+    float,
+    label=list:forward_scaling]
+    {../accelerator/model/forward_s_scaling.m}
+
+The algorithm to compute the sequence likelihood proposed by the reference work
+is an extension to the forward algorithm presented in the listings
+\ref{list:forward_basic} and \ref{list:forward_scaling}. Instead of constant
+transition probabilities, the extended algorithm computes a new transition
+probability matrix (size $ N \times N$) for each arriving observation symbol,
+by considering the delay of the new symbol with respect to the prior symbol.
+The computation of the transition probability matrix $ TP $ is implemented with
+listing \ref{list:ext} and formally defined by the equations \ref{eq:V},
+\ref{eq:D}, \ref{eq:D_fact} and \ref{eq:kernel}. As described in chapter
+\ref{ch:event_sequ}, also here for reasons of simplification, only one kernel
+is used.
+
+\lstinputlisting[language=Octave,
+    caption=Extension of the Forward Algorithm with only one kernel (Gaussian),
+    float,
+    label=list:ext]
+    {../accelerator/model/compute_tp.m}
+
+\emph{\color{red}Complexity in space and time}
 
 %-------------------------------------------------------------------------------
-\subsection{Serial Implementation}
+%===============================================================================
+\section{Available Parallelism}
+\label{ch:analysis_parallel}
 
-Script to run a sliding window over the sequence
-\lstinputlisting[language=Octave]{../accelerator/model/main_script.m}
-Forward Algorithm
-\lstinputlisting[language=Octave]{../accelerator/model/forward_s.m}
-Initialisation of each step
-\lstinputlisting[language=Octave]{../accelerator/model/forward_s_init.m}
-Computation per Observation Symbol
-\lstinputlisting[language=Octave]{../accelerator/model/forward_s_step.m}
-Extension of Forward Algorithm
-\lstinputlisting[language=Octave]{../accelerator/model/compute_tp.m}
+Considering only the basic forward algorithm (listing
+\ref{list:forward_basic}), the computation of the likelihood is divided in
+$L+1$ steps: the initialization, $L-1$ identical intermediate steps and the
+finalization. Because of the recursive nature of the algorithm, all steps
+(except the initialization) depend on the previously computed forward
+variables. For this reason a direct parallelization of the steps is not
+possible. However, at every arrival of a new observation symbol, the last $L$
+elements of the observation symbol sequence are used to compute the likelihood
+(sliding window of size $L$ over the stream of observation symbols
+\ref{fig:sliding}). This can be exploited to pipeline the steps in order to
+increase the throughput. By building a pipeline of $L+1$ stages, where each
+step of the forward algorithm corresponds to a pipeline stage, a likelihood is
+computed at every completion of a step, with a latency of
+$(L+1)*t_{step_{max}}$, where $t_{step_{max}}$ is the time needed to complete
+the computation of the most complex step (each stage of the pipeline must take
+the same amount of clock cycles). The throughput of a pipelined compared to
+a non-pipelined system is increased by factor $L$ (assuming that $L$ is big or
+by ignoring the setup time).  Another and more important fact, that makes the
+pipeline architecture very beneficial in this particular case: the
+configuration allows to load the transition probabilities $TP$ and the emission
+probabilities $b_i(o_k)$ for all steps at the same time, which reduces the load
+operations by factor $L$.  This is visualized by the table \ref{tab:pipeline}.
+The table shows the pipeline stages with input values that are fed to the stage
+before the execution (note, that the input values $TP$ and $B$ always depend on
+the same observation symbol. The parameter $d_k$ of the transition
+probabilities can be ignored in this case because only in the extended forward
+algorithm the transition probabilities depend on $d_k$. This will be discussed
+further when the extension is considered) and the output values resulting after
+the execution of the pipeline stage. Figure \ref{fig:pipeline} shows
+a schematic representation of the pipeline.
+
+\begin{table}
+    \footnotesize
+    \begin{center}
+    \begin{tabular}{|l|*{6}{c|}}
+    \cline{3-7}
+    \multicolumn{2}{c|}{} & \multicolumn{5}{c|}{Pipeline}\\
+    \hline
+    Symb & I/O & Init & Step 2 & \dots & Step L & Final \\
+    \hline
+    $O_1$ & in
+        & $B(O_1)$ & $B(O_1)$, $TP(d_1)$, 0
+        & \dots
+        & $B(O_1)$, $TP(d_1)$, 0 & 0 \\
+        & out
+        & $\alpha_1(O_1)$ & 0
+        & \dots
+        & 0 & 0 \\
+    \arrayrulecolor{mysmokegray}\hline
+    $O_2$ & in
+        & $B(O_2)$ & $B(O_2)$, $TP(d_2)$, $\alpha_1(O_1)$
+        & \dots
+        & $B(O_2)$, $TP(d_2)$, 0 & 0 \\
+        & out
+        & $\alpha_1(O_2)$ & $\alpha_2(O_{1,2})$
+        & \dots
+        & 0 & 0 \\
+    \hline
+    \vdots & & \vdots & \vdots & & \vdots & \vdots \\
+    \hline
+    $O_{L}$ & in
+        & $B(O_L)$ & $B(O_L)$, $TP(d_L)$, $\alpha_1(O_{L-1})$
+        & \dots
+        & $B(O_L)$, $TP(d_L)$, $\alpha_{L-1}(O_{1,\dots,{L-1}})$ & 0 \\
+        & out
+        & $\alpha_1(O_L)$ & $\alpha_2(O_{{L-1},L})$
+        & \dots
+        & $\alpha_L(O_{1,\dots,L})$ & 0 \\
+    \hline
+    $O_{L+1}$ & in
+        & $B(O_{L+1})$ & $B(O_{L+1})$, $TP(d_{L+1})$, $\alpha_1(O_L)$
+        & \dots
+        & $B(O_{L+1})$, $TP(d_{L+1})$, $\alpha_{L-1}(O_{2,\dots,L})$ & $\alpha_L(O_{1,\dots,L})$ \\
+        & out
+        & $\alpha_1(O_{L+1})$ & $\alpha_2(O_{L,{L+1}})$
+        & \dots
+        & $\alpha_L(O_{2,\dots,{L+1}})$ & $Ps(O_{1,\dots,L})$ \\
+    \hline
+    \vdots & & \vdots & \vdots & & \vdots & \vdots \\
+    \arrayrulecolor{black}\hline
+    \end{tabular}
+    \end{center}
+    \caption{Pipelined Forward Algorithm, with observation symbol $O_k$ and its
+        delay $d_k$}
+    \label{tab:pipeline}
+\end{table}
+
+\begin{figure}
+    \centering
+    \input{./schema/pipeline.tex}
+    \caption{Pipelined Forward Algorithm}
+    \label{fig:pipeline}
+\end{figure}
+
+\emph{\color{red}add figure with sliding window over arriving sequence of
+    observation symbols}
+
+By considering all dissimilar steps of the forward algorithm, more parallelization
+options can be found. In the initial step, $ N $ components of the first forward
+variable $ \alpha_1 $ are computed by multiplying independent pairs of an initial
+state probability $ \pi_i $ and an emission probability of the first observation
+symbol $ b_i(o_0) $. This can be fully parallelized by replicating the
+multiplication operation $ N $ times. Doing this results in a speedup factor of
+$ N $, assuming that $ N $ multipliers are available and the memory bandwidth
+is able to provide a data throughput $ N $ times higher than in the sequential
+case.
+
+The computation of the following forward variables $ \alpha_k $, with
+$ k = 2 \dots L $ are similar. To compute the $ N $ elements of one step, the
+Matrix-Vector-Vector multiplication described by equation \ref{eq:mvv} must
+be performed. Considering first only the Matrix-Vector multiplication, this can
+be parallelized by decomposing the matrix in to subsets and then use multiple
+computational units to perform multiplication and/or accumulation operations in
+parallel on the subsets. The decomposition can be done either by block-striped
+matrix partitioning (decomposition into subsets of rows or columns) or by
+checkerboard block matrix partitioning (decomposition in rectangular sets of
+elements). These partitioning methods are shown in figure
+\ref{fig:matrix_partitioning}. The number of subsets must correspond to the
+number of available computational units to perform the necessary operations.
+The choice of decomposition is heavily dependant on the accelerator
+architecture (e.g.  communication between computational units, memory
+architecture). The resulting vector can then be multiplied element wise by the
+emission probability vector, which is again the same case as described above.
+The maximal achievable speedup is a factor of $ N $, assuming that
+$ N $ computational units are available to perform the multiplication and
+accumulation operation on each subset, $ N $ multipliers to compute the final
+element wise vector-vector multiplication and a memory interface, that can
+handle a data throughput that is $ N $ times higher than in the sequential
+case.
+
+\emph{\color{red}add figure with different matrix partitioning methods}
+
+\emph{\color{red}check maximal speedup in case of checkerboard block
+partitioning}
+
+\emph{\color{red}sources for matrix partitioning methods?}
+
+Further parallelization can be done by using a adder tree to accumulate the
+elements in the matrix-vector multiplication process. Instead of using one
+adder/accumulator and accumulate the values sequentially, $ \frac{N}{2} $ units
+can be used to add $ \frac{N}{2} $ operand pairs in a first step, then
+consecutively adding resulting pairs until only one value results. This process
+is visualized in figure \ref{fig:add_tree}. The maximal speedup of this
+modification can be expressed as $ \frac{N}{\log_2(N)} $, assuming that
+$ \frac{N}{2} $ adders are available and the memory interface is able to handle
+a throughput that is $ \frac{N}{2} $ times higher than in the sequential case.
+
+\emph{\color{red}add figure with adder tree}
+
+The finalization step of the algorithm consists of calculating the likelihood.
+This is done by simply accumulating the $N$ elements of the last forward
+variable $\alpha_L$. This operation can be parallelized with an adder tree,
+resulting in a speedup as described above.
+
+The following sections will describe the impact on performance if scaling or
+the extension of the forward algorithm is implemented. Also the availability of
+parallelization in both cases will be discussed. Everything will be concluded
+with an overview of available parallelism and a discussion about the usefulness
+of each parallelization method in the context of the different algorithm
+implementations.
 
 %-------------------------------------------------------------------------------
-\subsection{Available Parallelism}
-
-\begin{itemize}
-    \item pipelining
-    \item replication of independent blocks
-\end{itemize}
-
-%-------------------------------------------------------------------------------
-\subsection{Scaling and Data Representation}
+%===============================================================================
+\section{Scaling and Data Representation}
+\label{ch:analysis_scaling}
 
 Scaling may be applied to prevent that the continuous multiplication of numbers
 smaller than one (e.g. probabilities) result in zero because of the limited
 accuracy by digitally representing fractional numbers. Scaling does not
-influence the order of complexity of the algorithm. By introducing scaling, the
-complexity of calculating one $ \alpha_k $ vector goes from $ N^2 $ (no
-scaling) to $ N^2 + 2N + 1 $ (scaling), which is the same order $ O(N^2) $.
-However, the introduction of scaling may increase the usage of recourses
-significantly: In order to scale $ \alpha_k $, the division operation is used
-to compute the scaling factor.  Division is far more complex than
-multiplication and hence uses more recourses.  Additionally, instead of the
-sequence likelihood (equation \ref{eq:P}) the sequence log-likelihood (equation
-\ref{eq:Plog}) needs to be computed, with the even more complex log operation.
+influence the order of complexity of the algorithm. By introducing a scaling
+method as proposed in the reference work, the complexity of calculating one
+$ \alpha_k $ vector goes from $ N^2 $ (no scaling) to $ N^2 + 2N
++ 1 $ (scaling), which is the same order $ O(N^2) $.  However, the introduction
+of scaling may increase the usage of recourses significantly: In order to scale
+$ \alpha_k $, the division operation is used to compute the scaling factor.
+Division is far more complex than multiplication and hence uses more recourses.
+Additionally, instead of the sequence likelihood (equation \ref{eq:P}) the
+sequence log-likelihood (equation \ref{eq:Plog}) needs to be computed, with the
+even more complex log operation.
 
 In order to limit the amount of necessary division operations, it is beneficial
 to consider the following: Rather than scaling each element of $ \alpha_k $ by
 dividing it by a scaling factor ($ N $ divisions), first the inverse of the
 scaling factor can be computed, which is then multiplied with each element of
-$ \alpha_k $ (one division and $ N $ multiplications). 
+$ \alpha_k $ (one division and $ N $ multiplications). Using
+$ N $ multiplication units, this operation can be parallelized.
 
 To compute the log-likelihood, $ N $ log and $ N $ sum operations are
 necessary, in comparison to $ N $ sum operations for the likelihood. In terms
 of memory, the log-likelihood is more complex because the scaling coefficients
 of each $ \alpha_k $ are used and need to be stored, while for the likelihood
-only the last set of forward variables $ \alpha_L $ are used.
+only the last set of forward variables $ \alpha_L $ are used. The computation
+of the log-likelihood can be parallelized by using $ N $ units computing the
+log function and additionally by an adder tree to speed up the accumulation.
+
+Instead of using the proposed scaling method, a simpler scaling may be applied.
+By analyzing the operands, an average scaling factor can be computed. Using the
+knowledge, that all the operands are probabilities,
+
+\begin{equation}
+    \sum\limits_{i=1}^{N} \pi_i = 1, \
+    \sum\limits_{j=1}^{N} tp_{ij} = 1, \
+    \sum\limits_{j=1}^{M} b_{ij} = 1
+\end{equation}
+
+and doing the computation of the forward variables,
+
+\begin{equation}\begin{split}
+    &\hat{\alpha}_1 = \hat{b} \cdot \hat{\pi} = \frac{1}{NM} \\
+    &\hat{\alpha}_2 = N \cdot \hat{\alpha}_1 \cdot \hat{tp} \cdot \hat{b} =
+        N \cdot \frac{1}{NM} \cdot \frac{1}{N} \cdot \frac{1}{M} =
+        \frac{1}{NM^2} \\
+    &\hat{\alpha}_3 = N \cdot \hat{\alpha}_2 \cdot \hat{tp} \cdot \hat{b} =
+        N \cdot \frac{1}{NM^2} \cdot \frac{1}{N} \cdot \frac{1}{M} =
+        \frac{1}{NM^3} \\
+    &\vdots\\
+    & \hat{\alpha}_L = \frac{1}{NM^L}
+\end{split}\end{equation}
+
+it can be computed, that assuming no precision loss at each computational step
+$k$, on average a scaling factor of $\frac{1}{M}$ is necessary in each step
+$k$. If the intermediate precision of the computational units is high enough to
+compensate for scaling to much or to few, this method is an easy solution to
+keep the values in an acceptable range. However, if the precision is not
+available (eg. if a fixed point data representation is chosen) a fixed scaling
+factor can cause an overflow (very bad because the result will be wrong) or an
+underflow (may be acceptable because it is only a loss of precision). In this
+case, rather than choosing an average scaling factor of $\frac{1}{M}$ it is
+safer to choose the scaling factor to be equal to the maximal possible scaling
+factor of all values of a specific event in $B$ (scale $\max\big(B(O_k)\big)$).
+By doing this, the scaling factor will be to small and if $L$ is big, the
+forward variables will still approach zero, only slower than without scaling.
+This is either acceptable because of a high precision, or another scaling
+factor must be computed to prevent this. The implemented solution will be
+explained in detail in chapter \ref{ch:design}.
 
 Another aspect to consider is the choice of data representation (floating point
-vs. fixed point). This depends on one hand on the necessary precision and on
+versus fixed point). This depends on one hand on the necessary precision and on
 the other hand on the choice of accelerator type.  While general purpose
 hardware such as CPU, GPU and DSP (to some degree) offer an abstraction to make
 the representation type transparent to the developer, specialized hardware such
@@ -469,41 +756,59 @@ the resource requirements or has a negative impact on performance (or both).
 
 The trade-off between the choice of using scaling or not versus the choice of
 the precision and the data representation, will be analyzed in more detail in
-chapter \ref{ch:acc_des}, when the technology of the accelerator has been
+chapter \ref{ch:design}, when the technology of the accelerator has been
 chosen.
 
-Scaling in general:
-\begin{equation}
-    \sum\limits_{i=1}^{N} \pi_i = 1
-\end{equation}
-\begin{equation}
-    \sum\limits_{j=1}^{N} v_{ij}(d_k) = 1
-\end{equation}
-\begin{equation}
-    \sum\limits_{j=1}^{M} b_{ij} = 1
-\end{equation}
-on average each\\
-$ \alpha_1 = \frac{1}{NM} $\\
-$ \alpha_2 = N\frac{1}{NM}\frac{1}{NM} = \frac{1}{NM^2} $\\
-$ \alpha_3 = N\frac{1}{NM}\frac{1}{NM^2} = \frac{1}{NM^3} $\\
-\dots\\
-$ \alpha_L = \frac{1}{NM^L} $\\
-assuming no precision loss at each computational step $ k $, on average a
-scaling factor of $ \frac{1}{M} $ is necessary in each step $ k $.
+%-------------------------------------------------------------------------------
+%===============================================================================
+\section{Extension of the Forward Algorithm}
+\label{ch:analysis_extension}
+
+The proposed extension uses a transition probability matrix which is not
+constant. For each arriving observation symbol, the matrix must be recomputed
+by using the delay (equation \ref{eq:delay}) and the sum of different
+cumulative distribution functions (equations \ref{eq:V} and \ref{eq:D}). To
+compute $N^2$ cumulative distribution functions is very expensive but it only
+needs to be computed once per dk and can then be stored for later usage.
+A transition probability matrix can be used for the computation of $L$ forward
+variables due to the continuous computation of likelihood values (as depicted
+in figure \ref{fig:sliding}). This implies, that storage for $L$ such matrices
+must be available. The computation of the transition probability matrix can be
+fully parallelized with $R*N^2$ computation units to perform a cumulative
+distribution function of $d_k$, where $R$ is the number of different cumulative
+distribution functions necessary to model the behaviour of the events. The
+memory interface needs to be able to provide a throughput that is $R*N^2$
+higher than in the sequential case (note that each cumulative distribution
+function takes several parameters as input. Eg. the normal cdf has the two
+parameters $\mu$ and $\sigma$). In previous chapters, $R$ was always assumed to
+be equal to one in order to simplify the problem.
+
+In order to not reduce the throughput of the fully parallelized computation of
+the forward variables, a small pipeline of two stages must be built, where in
+the first stage the transition probability matrix is computed and in the second
+stage the forward variables.
+
+Considering the huge computation power needed to fully parallelize the
+extension, it may be beneficial to use a very specialized unit (ASIC) just for
+the computation of the cumulative distribution function.
+
+The degree of necessary parallelization, depending on the choice of
+architecture will be discussed in the next section.
 
 %-------------------------------------------------------------------------------
-\subsection{Computation of Extension}
-This computation is very expensive but needs only to be computed once per dk.
-(Unlike the alphas, which need to be recomputed for the same dk because they
-depend on the previous alpha).
+%===============================================================================
+\section{Comparison and Scalability}
+\label{ch:analysis_all}
 
-Maybe use a very specialized unit (ASIC) just for the computation of the
-cumulative distribution function.
+\begin{itemize}
+    \item table presenting an overview of the parallelization options
+    \item discussion on usefulness of each parallelization option
+\end{itemize}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
 \section{Choice of Accelerator Type}
-\label{ch:acc_choice}
+\label{ch:analysis_choice}
 
 %-------------------------------------------------------------------------------
 \subsection{CPU}
@@ -592,13 +897,12 @@ cumulative distribution function.
         representation
 \end{itemize}
 
-basic implementation without extension and scaling
-\lstinputlisting[language=Octave]{../accelerator/model/forward_s_basic.m}
 
-%-------------------------------------------------------------------------------
 %===============================================================================
-\section{Design and Implementation}
-\label{ch:acc_des}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Design and Implementation}
+\label{ch:design}
+
 \begin{itemize}
     \item parallelization of one of nested for-loop or pipeline the loops
     \item fully pipelined MACC
@@ -613,7 +917,8 @@ until finally there is only one big block remaining, describing the complete
 algorithm.
 
 %-------------------------------------------------------------------------------
-\subsection{Precision}
+%===============================================================================
+\section{Precision}
 
 Modern FPGAs contain hardware blocks (DSP slices) that are heavily optimized
 for multiply-accumulate operations as they are often used for DSP applications.
@@ -676,7 +981,8 @@ truncate the value by only using the following 25 bits after the last leading
 zero. A more precise method would be to use rounding.
 
 %-------------------------------------------------------------------------------
-\subsection{Data Storage Management}
+%===============================================================================
+\section{Data Storage Management}
 
 \emph{\color{red}the following points need to be explained in more detail}
 
@@ -697,51 +1003,8 @@ parallel implementation should be used, an internal memory must be built.
 \end{itemize}
 
 %-------------------------------------------------------------------------------
-\subsection{Top View}
-\emph{\color{red}better title?}
-
-The computation of the likelihood is divided in $ L $ steps: the
-initialization, $ L-2 $ identical intermediate steps and the finalization.
-$ N $ initial forward variables $ \alpha_0 $. Each intermediate step computes
-$ N $ intermediate forward variables $ \alpha_k $ and the final step calculates
-the last set of $ N $ forward variables $ \alpha_L $ as well as the likelihood.
-Each step takes the emission probabilities $ b_i(o_k) $ corresponding to the
-observation symbol $ o_k $ and constant factors as input. Because of the
-recursive nature of the algorithm, all steps (except the initialization) depend
-on the previously computed forward variables. For this reason a direct
-parallelization of the steps is not possible. However, at every arrival of
-a new observation symbol, the last $ L $ elements of the observation symbol
-sequence are used to compute the likelihood. Hence, it is very beneficial to
-pipeline the steps. To do this, each step corresponds to a pipeline stage and is
-realized in hardware and connected as represented in the figure \ref{fig:arch}.
-With this configuration, a likelihood is computed at every completion of a step
-with a latency of $ L * t_{step_{max}} $, where $ t_{step_{max}} $ is the time
-needed to complete the computation of the most complex step (each stage of the
-pipeline must take the same amount of clock cycles). Additionally the
-configuration allows to load the constants $ TP $ and the emission
-probabilities $ b_i(o_k) $ for all steps at the same time, which reduces the
-load operations considerably. In the following sections, each dissimilar block
-is described in more detail.
-
-%\emph{\color{red}example on how the pipeline works}
-%at time $ t $ a new observation symbol $ o_t $ arrives and the corresponding
-%emission probabilities $ B(o_t) $ are entered as input into all the stages of
-%the pipeline. At time $ t+1 $ all the pipeline steps have completed their
-%computation, enter their result as input into the next pipeline stage and
-%receive new emission probabilities $ B(o_{t+1}) $
-
-\emph{\color{red}add step k to the figure \ref{fig:arch}}
-
-\begin{figure}[h]
-    \input{arch.tikz}
-    \centering
-    \def\svgwidth{\columnwidth}
-    \caption{Top View of the Architecture}
-    \label{fig:arch}
-\end{figure}
-
-%-------------------------------------------------------------------------------
-\subsection{Initialization}
+%===============================================================================
+\section{Initialization}
 
 Figure \ref{fig:init_s} shows the necessary operation to compute every i-th
 component of the first forward variable $ \alpha_1 $ in the initialization
@@ -757,23 +1020,15 @@ $ N $ components of $ \alpha_1 $ appear at the same time, after $ S $ cycles in
 the output registers. If such a heavy parallelization is useful will be
 analyzed after all stages have been described.
 
-%\emph{\color{red}add input registers to figure \ref{fig:init}}
-
-%\begin{figure}[h]
-%    \input{arch_init.tikz}
-%    \centering
-%    \def\svgwidth{\columnwidth}
-%    \caption{Initialization step}
-%    \label{fig:init}
-%\end{figure}
-\begin{figure}[h]
-    \includegraphics[width=1\columnwidth]{arch_init_s.png}
+\begin{figure}
+    \includegraphics[width=1\columnwidth]{./schema/arch_init_s.png}
     \caption{Initialisation step with one MACC}
     \label{fig:init_s}
 \end{figure}
 
 %-------------------------------------------------------------------------------
-\subsection{k-th Forward Variable}
+%===============================================================================
+\section{k-th Forward Variable}
 \emph{\color{red}better title?}
 
 \begin{itemize}
@@ -784,29 +1039,30 @@ analyzed after all stages have been described.
         \cite{FCCM12_Kestur, ITNG07_Yang}
 \end{itemize}
 
-\begin{figure}[h]
-    \includegraphics[width=1\columnwidth]{arch_step_s.png}
+\begin{figure}
+    \includegraphics[width=1\columnwidth]{./schema/arch_step_s.png}
     \caption{k-th step with one MACC unit}
     \label{fig:step_s}
 \end{figure}
-\begin{figure}[h]
-    \includegraphics[width=1\columnwidth]{./arch_shift_reg_s.png}
+\begin{figure}
+    \includegraphics[width=1\columnwidth]{./schema/arch_shift_reg_s.png}
     \caption{Example of input shift register with N=2}
     \label{fig:shift_reg_s}
 \end{figure}
 
-\begin{figure}[h]
-    \includegraphics[width=1\columnwidth]{arch_step_p.png}
+\begin{figure}
+    \includegraphics[width=1\columnwidth]{./schema/arch_step_p.png}
     \caption{k-th step with $ N+1 $ MACC units and integrated computation of P
         (which is only needed at the last step)}
     \label{fig:step_p}
 \end{figure}
 
 %-------------------------------------------------------------------------------
-\subsection{Serial Controller}
+%===============================================================================
+\section{Serial Controller}
 
-\begin{figure}[h]
-    \includegraphics[width=1\columnwidth]{arch_ctrl.png}
+\begin{figure}
+    \includegraphics[width=1\columnwidth]{./schema/arch_ctrl.png}
     \caption{Controller of serial implementation}
     \label{fig:ctrl}
 \end{figure}
@@ -814,24 +1070,19 @@ analyzed after all stages have been described.
 \emph{\color{red} in table \ref{tab:ctrl} the signals flush\_Ps and load\_out
 are only set in the first iteration. Add a footnote?}
 
-\begin{table}[h]
+\begin{table}
     \begin{center}
     \begin{tabular}{|l|c|c|c|c|c|c|c|}
     \hline
-                      & INIT & LOAD & MACC & CONCILIATE & MUL & STORE & FLUSH \\
+                      & INIT & SELECT & MACC & CONCILIATE & MUL & STORE & FLUSH \\
     \hline
-    sel\_op1          & 0    & 0    & 0    & 0          & 1   & 0     & 0     \\
-    sel\_op1\_zero    & 0    & 0    & 0    & 1          & 0   & 0     & 0     \\
-    sel\_op2          & 0    & 0    & 0    & 0          & 1   & 0     & 0     \\
-    load\_alpha\_in   & 0    & 1    & 0    & 0          & 0   & 0     & 0     \\
-    load\_out         & 0    & 0    & 0    & 0          & 0   & 1     & 0     \\
-    shift\_alpha\_in  & 0    & 1    & 1    & 0          & 0   & 0     & 0     \\
-    shift\_alpha\_out & 0    & 0    & 0    & 0          & 0   & 1     & 0     \\
-    enable\_init      & 0    & 0    & 0    & 0          & 1   & 0     & 0     \\
-    enable\_step      & 0    & 0    & 1    & 1          & 1   & 0     & 0     \\
-    enable\_final     & 0    & 0    & 1    & 0          & 0   & 0     & 0     \\
-    flush             & 0    & 0    & 0    & 0          & 0   & 0     & 1     \\
-    flush\_Ps         & 0    & 1    & 0    & 0          & 0   & 0     & 0     \\
+    shift\_alpha\_in  & 0    & 0      & 1    & 0          & 0   & 0     & 0     \\
+    shift\_alpha\_out & 0    & 0      & 0    & 0          & 0   & 1     & 0     \\
+    conciliate        & 0    & 0      & 0    & 1          & 0   & 0     & 0     \\
+    enable\_init      & 0    & 0      & 0    & 0          & 1   & 0     & 0     \\
+    enable\_step      & 0    & 0      & 1    & 1          & 1   & 0     & 0     \\
+    enable\_final     & 0    & 1      & 0    & 0          & 0   & 0     & 0     \\
+    flush             & 0    & 0      & 0    & 0          & 0   & 0     & 1     \\
     \hline
     \end{tabular}
     \end{center}
@@ -840,7 +1091,17 @@ are only set in the first iteration. Add a footnote?}
 \end{table}
 
 %-------------------------------------------------------------------------------
-\subsection{Balancing Pipeline Stages}
+%===============================================================================
+\section{Balancing Pipeline Stages}
+
+%-------------------------------------------------------------------------------
+%===============================================================================
+\section{Practical Notes}
+
+\begin{itemize}
+    \item generic design (change N, L and bit widths in param\_pkg)
+    \item if bit widths of op1 is changed, fifo\_512x25 must be regenerated
+\end{itemize}
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
