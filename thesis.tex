@@ -7,6 +7,8 @@
 \usepackage{auto-pst-pdf}
 \usepackage{array}
 \usepackage{colortbl}
+\usepackage{multirow}
+\usepackage{subscript}
 \usetikzlibrary{calc}
 
 % customizations
@@ -414,14 +416,13 @@ To calculate $ \theta $, the following parameters need to be set:
 \chapter{Theoretical Analysis of the Forward Algorithm}
 \label{ch:analysis}
 
-\emph{\color{red}introduction to the chapter}
-\begin{itemize}
-    \item serial implementation and complexity
-    \item find available options for parallelization
-    \item floating points vs fixed points
-    \item implementation of exp and log function (LUT, Taylor, ...)
-    \item choice of accelerator (Type, Model)
-\end{itemize}
+This chapter provides details about the forward algorithm and available (and
+useful) parallelization techniques applicable on the algorithm. The generally
+known forward algorithm as well as the extended version proposed in the
+reference work is discussed. Further, scaling techniques of the forward
+variables and their impact on data representation choices are presented.
+Finally the observations presented in an overview and an appropriate choice on
+possible acceleration hardware is made.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -470,7 +471,7 @@ scaling, instead of the likelihood, the log-likelihood is computed. Equation
 \ref{eq:Plog} gives the formal definition.
 
 \lstinputlisting[language=Octave,
-    caption=Forward Algorithm,
+    caption=Forward Algorithm with scaling,
     float,
     label=list:forward_scaling]
     {../accelerator/model/forward_s_scaling.m}
@@ -485,7 +486,8 @@ The computation of the transition probability matrix $ TP $ is implemented with
 listing \ref{list:ext} and formally defined by the equations \ref{eq:V},
 \ref{eq:D}, \ref{eq:D_fact} and \ref{eq:kernel}. As described in chapter
 \ref{ch:event_sequ}, also here for reasons of simplification, only one kernel
-is used.
+is used. In the sample code the Gaussian cumulative distribution function is
+used. The function needs to be called for every k.
 
 \lstinputlisting[language=Octave,
     caption=Extension of the Forward Algorithm with only one kernel (Gaussian),
@@ -493,12 +495,20 @@ is used.
     label=list:ext]
     {../accelerator/model/compute_tp.m}
 
-\emph{\color{red}Complexity in space and time}
+The order of time complexity of the algorithm is $O(LN^2)$. While the
+complexity increases with the introduction of scaling and/or the extension, the
+order of complexity stays the same. The same is true for the space complexity
+which is of the order $O(N^2)$.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
 \section{Available Parallelism}
 \label{ch:analysis_parallel}
+
+By applying parallelization methods one aims to increase the throughput or
+reduce the latency of a task, or to achieve both at the same time. This can be
+done at the cost of increased usage of parallel computation units, memory and
+memory bandwidth.
 
 Considering only the basic forward algorithm (listing
 \ref{list:forward_basic}), the computation of the likelihood is divided in
@@ -508,28 +518,35 @@ finalization. Because of the recursive nature of the algorithm, all steps
 variables. For this reason a direct parallelization of the steps is not
 possible. However, at every arrival of a new observation symbol, the last $L$
 elements of the observation symbol sequence are used to compute the likelihood
-(sliding window of size $L$ over the stream of observation symbols
-\ref{fig:sliding}). This can be exploited to pipeline the steps in order to
-increase the throughput. By building a pipeline of $L+1$ stages, where each
-step of the forward algorithm corresponds to a pipeline stage, a likelihood is
-computed at every completion of a step, with a latency of
+(cf. figure \ref{fig:sliding}). This can be exploited to pipeline the steps in
+order to increase the throughput. By building a pipeline of $L+1$ stages, where
+each step of the forward algorithm corresponds to a pipeline stage,
+a likelihood is computed at every completion of a step, with a latency of
 $(L+1)*t_{step_{max}}$, where $t_{step_{max}}$ is the time needed to complete
 the computation of the most complex step (each stage of the pipeline must take
 the same amount of clock cycles). The throughput of a pipelined compared to
-a non-pipelined system is increased by factor $L$ (assuming that $L$ is big or
-by ignoring the setup time).  Another and more important fact, that makes the
+a non-pipelined system is increased by factor $L$ (assuming an infinite runtime
+or by ignoring the setup time). Another and more important fact, that makes the
 pipeline architecture very beneficial in this particular case: the
 configuration allows to load the transition probabilities $TP$ and the emission
 probabilities $b_i(o_k)$ for all steps at the same time, which reduces the load
-operations by factor $L$.  This is visualized by the table \ref{tab:pipeline}.
+operations by factor $L$. This is visualized by the table \ref{tab:pipeline}.
 The table shows the pipeline stages with input values that are fed to the stage
 before the execution (note, that the input values $TP$ and $B$ always depend on
 the same observation symbol. The parameter $d_k$ of the transition
-probabilities can be ignored in this case because only in the extended forward
-algorithm the transition probabilities depend on $d_k$. This will be discussed
-further when the extension is considered) and the output values resulting after
-the execution of the pipeline stage. Figure \ref{fig:pipeline} shows
-a schematic representation of the pipeline.
+probabilities can be ignored in this case, because only in the extended forward
+algorithm the they depend on $d_k$. This will be discussed further when the
+extension is considered) and the output values resulting after the execution of
+the pipeline stage. Figure \ref{fig:pipeline} shows a schematic representation
+of the pipeline.
+
+\begin{figure}
+    \centering
+    \input{./schema/window.tex}
+    \caption{Sliding window over an observation sequence of the
+        last $L=10$ observation symbols}
+    \label{fig:sliding}
+\end{figure}
 
 \begin{table}
     \footnotesize
@@ -539,6 +556,7 @@ a schematic representation of the pipeline.
     \multicolumn{2}{c|}{} & \multicolumn{5}{c|}{Pipeline}\\
     \hline
     Symb & I/O & Init & Step 2 & \dots & Step L & Final \\
+    \hline
     \hline
     $O_1$ & in
         & $B(O_1)$ & $B(O_1)$, $TP(d_1)$, 0
@@ -583,7 +601,8 @@ a schematic representation of the pipeline.
     \end{tabular}
     \end{center}
     \caption{Pipelined Forward Algorithm, with observation symbol $O_k$ and its
-        delay $d_k$}
+        delay $d_k$. Here $O_{i, \dots, k}$ is a short notation for $O_i, \dots,
+        O_k$}
     \label{tab:pipeline}
 \end{table}
 
@@ -594,65 +613,77 @@ a schematic representation of the pipeline.
     \label{fig:pipeline}
 \end{figure}
 
-\emph{\color{red}add figure with sliding window over arriving sequence of
-    observation symbols}
+By considering all dissimilar steps of the forward algorithm, more
+parallelization options can be found. In the initial step, $N$ components of
+the first forward variable $\alpha_1$ are computed by multiplying independent
+pairs of an initial state probability $\pi_i$ and an emission probability of
+the first observation symbol $b_i(o_0)$. This can be fully parallelized by
+replicating the multiplication operation $N$ times. Doing this results in
+a increase of the throughput by factor $N$ and a decrease of the latency by
+factor $\frac{1}{N}$, assuming that $N$ multipliers are available and the
+memory bandwidth is able to provide a data throughput $N$ times higher than in
+the sequential case (including the memory interface).
 
-By considering all dissimilar steps of the forward algorithm, more parallelization
-options can be found. In the initial step, $ N $ components of the first forward
-variable $ \alpha_1 $ are computed by multiplying independent pairs of an initial
-state probability $ \pi_i $ and an emission probability of the first observation
-symbol $ b_i(o_0) $. This can be fully parallelized by replicating the
-multiplication operation $ N $ times. Doing this results in a speedup factor of
-$ N $, assuming that $ N $ multipliers are available and the memory bandwidth
-is able to provide a data throughput $ N $ times higher than in the sequential
-case.
-
-The computation of the following forward variables $ \alpha_k $, with
-$ k = 2 \dots L $ are similar. To compute the $ N $ elements of one step, the
-Matrix-Vector-Vector multiplication described by equation \ref{eq:mvv} must
-be performed. Considering first only the Matrix-Vector multiplication, this can
-be parallelized by decomposing the matrix in to subsets and then use multiple
+The computation of the following forward variables $\alpha_k$, with $k
+= 2 \dots L$ are similar. To compute the $N$ elements of one step, the
+Matrix-Vector-Vector multiplication described by equation \ref{eq:mvv} must be
+performed. Considering first only the Matrix-Vector multiplication, this can be
+parallelized by decomposing the matrix in to subsets and then use multiple
 computational units to perform multiplication and/or accumulation operations in
-parallel on the subsets. The decomposition can be done either by block-striped
-matrix partitioning (decomposition into subsets of rows or columns) or by
-checkerboard block matrix partitioning (decomposition in rectangular sets of
-elements). These partitioning methods are shown in figure
+parallel on the subsets. An intuitive decomposition can be done either by
+block-striped matrix partitioning (decomposition into subsets of rows or
+columns) or by checkerboard block matrix partitioning (decomposition in
+rectangular sets of elements). These partitioning methods are shown in figure
 \ref{fig:matrix_partitioning}. The number of subsets must correspond to the
 number of available computational units to perform the necessary operations.
 The choice of decomposition is heavily dependant on the accelerator
 architecture (e.g.  communication between computational units, memory
 architecture). The resulting vector can then be multiplied element wise by the
 emission probability vector, which is again the same case as described above.
-The maximal achievable speedup is a factor of $ N $, assuming that
-$ N $ computational units are available to perform the multiplication and
-accumulation operation on each subset, $ N $ multipliers to compute the final
-element wise vector-vector multiplication and a memory interface, that can
-handle a data throughput that is $ N $ times higher than in the sequential
-case.
+In case of the block-striped matrix partitioning, the maximal achievable
+increase of the throughput is a factor of $N$ and the latency can be decreased
+by factor $\frac{1}{N}$, assuming that $N$ computational units are available to
+perform the multiplication and accumulation operation on each subset, $N$
+multipliers to compute the final element wise vector-vector multiplication and
+a memory interface, that can handle a data throughput that is $N$ times higher
+than in the sequential case. The checkerboard partitioning yields a lower gain
+but may be considered in case of fixed computational unit architecture (CPU,
+GPU) in order to increase the utility of recourses available in each unit.
+Apart from homogeneous partitioning methods as mentioned above also
+inhomogeneous solutions have been proposed \cite{IPDPSW12_DeFlumere, clarke11}.
+These are not considered in this work, as the focus lies on homogeneous
+computation units.
 
-\emph{\color{red}add figure with different matrix partitioning methods}
+\begin{figure}
+    \centering
+    \input{./schema/matrix.tex}
+    \caption{Matrix partitioning (from left to right): column-block-striped,
+        row-block-striped and checkerboard blocks}
+    \label{fig:matrix_partitioning}
+\end{figure}
 
-\emph{\color{red}check maximal speedup in case of checkerboard block
-partitioning}
-
-\emph{\color{red}sources for matrix partitioning methods?}
-
-Further parallelization can be done by using a adder tree to accumulate the
+Further parallelization can be done by using a reduction tree to accumulate the
 elements in the matrix-vector multiplication process. Instead of using one
-adder/accumulator and accumulate the values sequentially, $ \frac{N}{2} $ units
-can be used to add $ \frac{N}{2} $ operand pairs in a first step, then
-consecutively adding resulting pairs until only one value results. This process
-is visualized in figure \ref{fig:add_tree}. The maximal speedup of this
-modification can be expressed as $ \frac{N}{\log_2(N)} $, assuming that
-$ \frac{N}{2} $ adders are available and the memory interface is able to handle
-a throughput that is $ \frac{N}{2} $ times higher than in the sequential case.
+computation unit and accumulate the values sequentially, $N$ units can be used
+to first multiply two operands together, then adding $\frac{N}{2}$ resulting
+operand pairs in a second step and then consecutively adding resulting pairs
+until only one value results. This process is visualized in figure
+\ref{fig:red_tree}. The maximal increase of throughput is of factor $\log_2(N)$
+and the latency can be decreased by factor $\frac{1}{\log_2(N)}$, assuming that
+$N$ computation units are available and the memory interface is able to handle
+a throughput that is $N$ times higher than in the sequential case.
 
-\emph{\color{red}add figure with adder tree}
+\begin{figure}
+    \centering
+    \input{./schema/red_tree.tex}
+    \caption{Reduction Tree with $N=5$}
+    \label{fig:red_tree}
+\end{figure}
 
 The finalization step of the algorithm consists of calculating the likelihood.
 This is done by simply accumulating the $N$ elements of the last forward
-variable $\alpha_L$. This operation can be parallelized with an adder tree,
-resulting in a speedup as described above.
+variable $\alpha_L$. This operation can be parallelized with a reduction tree,
+resulting in a throughput and latency optimization as described above.
 
 The following sections will describe the impact on performance if scaling or
 the extension of the forward algorithm is implemented. Also the availability of
@@ -663,37 +694,58 @@ implementations.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
+\section{Simple Models}
+\label{ch:analysis_simple}
+
+Until now, it was always assumed, that the model is fully connected (ergodic),
+i.e. that every state can be reached from every other state. This is not
+necessarily the case, as it is often possible to describe a system with
+a simpler model. By adding more constraints to the possible state transitions
+(e.g. only one direction, feed-forward), only a few elements in the transition
+probability matrix are non-zero. In this case it is beneficial to use an array
+(adjacency list) instead of a matrix to represent the transition probabilities.
+Different methods have been proposed on how to store sparse matrices, but they
+are usually stonily dependant of the architecture and will hence be discussed
+only after the type acceleration device has been chosen.  A list with only
+non-zero elements instead of a sparse matrix reduces the necessary memory to
+store the data and makes a lot of computations superfluous.  A Matrix-Vector
+multiplication parallelization as described in the previous section would not
+be beneficial anymore as a lot of computational units would be idle in most of
+the time.
+
+%-------------------------------------------------------------------------------
+%===============================================================================
 \section{Scaling and Data Representation}
 \label{ch:analysis_scaling}
 
 Scaling may be applied to prevent that the continuous multiplication of numbers
-smaller than one (e.g. probabilities) result in zero because of the limited
+smaller than one (e.g. probabilities) result in zero, because of the limited
 accuracy by digitally representing fractional numbers. Scaling does not
 influence the order of complexity of the algorithm. By introducing a scaling
 method as proposed in the reference work, the complexity of calculating one
-$ \alpha_k $ vector goes from $ N^2 $ (no scaling) to $ N^2 + 2N
-+ 1 $ (scaling), which is the same order $ O(N^2) $.  However, the introduction
-of scaling may increase the usage of recourses significantly: In order to scale
-$ \alpha_k $, the division operation is used to compute the scaling factor.
-Division is far more complex than multiplication and hence uses more recourses.
-Additionally, instead of the sequence likelihood (equation \ref{eq:P}) the
-sequence log-likelihood (equation \ref{eq:Plog}) needs to be computed, with the
-even more complex log operation.
+$\alpha_k$ vector goes from $N^2$ (no scaling) to $N^2 + 2N + 1$ (scaling),
+which is the same order $O(N^2)$. However, the introduction of scaling may
+increase the usage of recourses significantly: In order to scale $\alpha_k$,
+the division operation is used to compute the scaling factor.  Division is far
+more complex than multiplication and hence uses more recourses.  Additionally,
+instead of the sequence likelihood (equation \ref{eq:P}) the sequence
+log-likelihood (equation \ref{eq:Plog}) needs to be computed, with the even
+more complex log operation.
 
 In order to limit the amount of necessary division operations, it is beneficial
-to consider the following: Rather than scaling each element of $ \alpha_k $ by
-dividing it by a scaling factor ($ N $ divisions), first the inverse of the
+to consider the following: Rather than scaling each element of $\alpha_k$ by
+dividing it by a scaling factor ($N$ divisions), first the inverse of the
 scaling factor can be computed, which is then multiplied with each element of
-$ \alpha_k $ (one division and $ N $ multiplications). Using
-$ N $ multiplication units, this operation can be parallelized.
+$\alpha_k$ (one division and $N$ multiplications). Using $N$ multiplication
+units, this operation can be parallelized.
 
-To compute the log-likelihood, $ N $ log and $ N $ sum operations are
-necessary, in comparison to $ N $ sum operations for the likelihood. In terms
-of memory, the log-likelihood is more complex because the scaling coefficients
-of each $ \alpha_k $ are used and need to be stored, while for the likelihood
-only the last set of forward variables $ \alpha_L $ are used. The computation
-of the log-likelihood can be parallelized by using $ N $ units computing the
-log function and additionally by an adder tree to speed up the accumulation.
+To compute the log-likelihood, $N$ log and $N$ sum operations are necessary, in
+comparison to $N$ sum operations for the likelihood. In terms of memory, the
+log-likelihood is more complex because the scaling coefficients of each
+$\alpha_k$ are used and need to be stored, while for the likelihood only the
+last set of forward variables $\alpha_L$ are used. The computation of the
+log-likelihood can be parallelized by using $N$ units computing the log
+function and additionally by a reduction tree to speed up the accumulation.
 
 Instead of using the proposed scaling method, a simpler scaling may be applied.
 By analyzing the operands, an average scaling factor can be computed. Using the
@@ -759,66 +811,307 @@ the precision and the data representation, will be analyzed in more detail in
 chapter \ref{ch:design}, when the technology of the accelerator has been
 chosen.
 
+\emph{\color{red}add sources for fixed point vs floating point discussions}
+
 %-------------------------------------------------------------------------------
 %===============================================================================
 \section{Extension of the Forward Algorithm}
 \label{ch:analysis_extension}
 
 The proposed extension uses a transition probability matrix which is not
-constant. For each arriving observation symbol, the matrix must be recomputed
-by using the delay (equation \ref{eq:delay}) and the sum of different
-cumulative distribution functions (equations \ref{eq:V} and \ref{eq:D}). To
-compute $N^2$ cumulative distribution functions is very expensive but it only
-needs to be computed once per dk and can then be stored for later usage.
-A transition probability matrix can be used for the computation of $L$ forward
-variables due to the continuous computation of likelihood values (as depicted
-in figure \ref{fig:sliding}). This implies, that storage for $L$ such matrices
-must be available. The computation of the transition probability matrix can be
-fully parallelized with $R*N^2$ computation units to perform a cumulative
-distribution function of $d_k$, where $R$ is the number of different cumulative
-distribution functions necessary to model the behaviour of the events. The
-memory interface needs to be able to provide a throughput that is $R*N^2$
-higher than in the sequential case (note that each cumulative distribution
-function takes several parameters as input. Eg. the normal cdf has the two
-parameters $\mu$ and $\sigma$). In previous chapters, $R$ was always assumed to
-be equal to one in order to simplify the problem.
+constant. For every arriving observation symbol, the matrix must be recomputed
+by using the delay of the symbol (equation \ref{eq:delay}) and the sum of
+different cumulative distribution functions (equations \ref{eq:V} and
+\ref{eq:D}). To compute $N^2$ cumulative distribution functions is very
+expensive but it only needs to be computed once per $d_k$ and can then be
+stored for later usage.  A transition probability matrix can be used for the
+computation of $L$ forward variables due to the continuous computation of
+likelihood values (as depicted in figure \ref{fig:sliding}). This implies, that
+storage for $L$ such matrices must be available or the matrix must be
+recomputed when needed and only the delay value is stored. In case of
+a pipelined architecture, the additional storage or computation is not
+necessary (cf. figure \ref{fig:pipeline} and table \ref{tab:pipeline}). The
+computation of the transition probability matrix can be fully parallelized with
+$R*N^2$ computation units to perform a cumulative distribution function of
+$d_k$, where $R$ is the number of different cumulative distribution functions
+necessary to model the behaviour of the events. The memory interface needs to
+be able to provide a throughput that is $R*N^2$ higher than in the sequential
+case (note that each cumulative distribution function takes several parameters
+as input. Eg. the normal cdf has the two parameters $\mu$ and $\sigma$). In
+previous chapters, $R$ was always assumed to be equal to one in order to
+simplify the problem.
 
-In order to not reduce the throughput of the fully parallelized computation of
-the forward variables, a small pipeline of two stages must be built, where in
-the first stage the transition probability matrix is computed and in the second
-stage the forward variables.
+Note, that while the computation of one extended transition probability is
+independent of $N$ or $L$, it is still a lot more complex than the simple
+multiply-accumulate operation necessary to calculate a forward variable (cf.
+the list below). Due to this, the computational units calculating the
+transition probability matrix must provide a lot more performance than the
+units necessary to compute the resulting forward variables in order to not
+limit the throughput. To get a rough impression of how expensive the
+computation of a distribution function is, the following list with three common
+examples is provided:
+
+\begin{description}
+    \item[Exponential CDF] \hfill \\
+        This distribution function describes the time between
+        events in a Poisson process (events occur continuously and independently
+        at a constant average rate). It is expressed as
+        \begin{equation}
+            \label{eq:V}
+            F_{exp}(x) = \left\{
+                \begin{array}{l l}
+                    1 - \exp(-\lambda x)
+                        & \quad \text{if $x \geq 0$}\\
+                    0
+                        & \quad \text{if $x < 0$}
+                \end{array} \right.
+        \end{equation}
+        Only the exponential function is needed, which is quite a complex
+        function compared to a multiplication and could be problematic in a
+        fully parallelized implementation (considering all parallelization
+        options), but realizable in an implementation with less parallelism.
+    \item[Lapalce CDF] \hfill \\
+        This distribution is somewhat the extension of the
+        exponential distribution and is also called double exponential
+        distribution as it can be described as two exponential distributions
+        put together (one flipped horizontally). It is expressed as
+        \begin{equation}
+            \label{eq:V}
+            F_{laplace}(x) = \left\{
+                \begin{array}{l l}
+                    1 - \frac{1}{2}\exp(-\frac{x-\mu}{b})
+                        & \quad \text{if $x \geq \mu$}\\
+                    \frac{1}{2} \exp(\frac{x-\mu}{b})
+                        & \quad \text{if $x < \mu$}
+                \end{array} \right.
+        \end{equation}
+        In terms of complexity, for the Laplace distribution holds the same as
+        for the exponential CDF.
+    \item[Gaussian CDF] \hfill \\
+        This is a very important distribution that is used in a lot of
+        applications. It is used for real-valued random variables whose
+        distributions are not known. The Gaussian (normal) cumulative
+        distribution function cannot be expressed in terms of elementary
+        functions, which is the reason why the special error function $\erf$ is
+        used. It is defined by equation \ref{eq:kernel}. Using integration by
+        parts and the substitution $x = \frac{d_k-\mu}{\sigma}$, it can be
+        expressed as
+        \begin{equation}
+            \Phi(x) = \frac{1}{2}
+                + \frac{1}{\sqrt{2\pi}} \cdot \exp(-\frac{x^2}{2})
+                \cdot \Bigg[ x+\frac{x^3}{3} + \frac{x^5}{3 \cdot 5} + \cdots
+                + \frac{x^{2n+1}}{3 \cdot 5 \cdots (2n+1)} \Bigg]
+        \end{equation}
+        This computation is very expensive. It comprises of an exponential
+        function and an iterative approach (to achieve the necessary precision)
+        including the power function and additions. If this distribution is
+        chosen to describe the time between events, parallelization will be very
+        challenging, in order to prevent this calculation from being the
+        bottleneck.
+\end{description}
 
 Considering the huge computation power needed to fully parallelize the
 extension, it may be beneficial to use a very specialized unit (ASIC) just for
 the computation of the cumulative distribution function.
 
-The degree of necessary parallelization, depending on the choice of
-architecture will be discussed in the next section.
+Independent of the distribution, to not reduce the throughput of the fully
+parallelized computation of the forward variables, a small pipeline of two
+stages must be built, where in the first stage the transition probability
+matrix is computed and in the second stage the forward variables.
+
+The correction of the diagonal elements (cf. listing \ref{list:ext}) can be
+maximal parallelized by using $N$ reduction trees to compute the sum of rows and
+$N$ subtracters to correct the diagonal elements.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Comparison and Scalability}
+\section{Reasonable Parallelism and Scalability}
 \label{ch:analysis_all}
 
+In the sections above, a lot of parallelization has been proposed. A maximal
+parallelization can hardly be achieved due to the immense requirement of
+recourses and is also not necessary because of dependencies. In a first step,
+a theoretical analysis (in terms of complexity order) of the different
+parallelization options and their combination is done. Then the results will be
+discussed and a choice will be made. Finally some conclusions about a finer
+degree of parallelization will be drawn in respect to the chosen architecture.
+Table \ref{tab:summary_O} shows the pipelined architecture (cf. figure
+\ref{fig:pipeline}), the parallel architecture in the case of maximal row
+partitioning (cf. figure \ref{fig:matrix_partitioning}), the combination of
+both architectures and in the last column the combination of both architectures
+plus the reduction tree (cf figure \ref{fig:red_tree}). The basic and the
+extended forward algorithm are both of the same complexity order. As only the
+complexity order is considered, real computation times of different operations
+as well as scaling operations can be ignored. Due to simplification, it is
+assumed that $N=L$ and that by scaling the problem, $N$ and $L$ are both
+changing in the same order.
+
+\begin{table}
+    \begin{center}
+        \begin{tabular}{|l|*{4}{c|}}
+            \hline
+            Metric & Pipelined & Parallel & Both & Both \& Tree \\
+            \hline
+            \hline
+            Computation Units
+            & $O(N)$ & $O(N)$ & $O(N^2)$ & $O(N^3)$ \\
+            \hline
+            Memory Space
+            & $O(N^2)$ & $O(N^2)$ & $O(N^2)$ & $O(N^2)$ \\
+            \hline
+            R/W Access
+            & $O(1)$ & $O(N)$ & $O(N)$ & $O(N)$ \\
+            \hline
+            \hline
+            Throughput
+            & $\times N$ & $\times N$ & $\times N^2$ & $\times N^2\log N$ \\
+            \hline
+            Latency
+            & $\times 1$ & $\times \frac{1}{N}$ & $\times \frac{1}{N}$
+            & $\times \frac{1}{N\log N}$ \\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Comparison of architectures in terms of complexity for the forward
+        algorithm}
+    \label{tab:summary_O}
+\end{table}
+
+The two first columns show that the smaller latency of the parallel architecture
+comes at the price of a larger memory interface (simultaneous memory access
+is required). By combining both architectures (3rd column), the throughput can
+be increased by factor $N$ at the cost of increasing the order of computation
+units. Adding also the reduction tree, throughput and latency are increased, 
+resp. decreased by an additional factor of $\log N$. This comes again at the
+cost of increasing the order of computation units further. While the benefits
+are welcome, $N^3$ is simply to high to realistically implement such a solution.
+Already with a small $N$ a huge server farm or thousands of FPGAs or GPUs would
+be necessary. Computation units in an order of $N^2$ (2nd column) is feasible
+for small $N$ by combining multiple devices. While this may be acceptable for
+a very important computation where lots of people depend upon (eg. weather
+forecast, Google queries, etc.) failure prediction hardly falls into this
+category especially if failures of an embedded system are predicted.
+Additionally, using multiple devices in order to scale the problem, implies
+off-chip-communication and -memory. This will result in huge bottlenecks and
+have a huge impact on the actual speedup. This leaves the first two columns to
+compare for the application at hand.
+
+Table \ref{tab:summary_D} now only compares the pipelined architecture with the
+parallel architecture but with more detailed estimations of resource usage.
+The comparison is done for the basic and the extended forward algorithm (for
+explanations refer to the previous sections in this chapter). In case of the
+extended forward algorithm, when the parallel architecture is used, there is
+a choice to be made if the parallelization should be achieved by increasing the
+memory usage or the number of computational units (hence the two columns).
+
+\begin{table}
+    \begin{center}
+        \begin{tabular}{|c|l|*{3}{c|}}
+        %\begin{tabular}{|c|l|*{7}{c|}}
+            %\cline{3-9}
+            \cline{3-5}
+            \multicolumn{2}{c|}{}
+            & Pipelined
+            & \multicolumn{2}{c|}{Parallel}
+            %& \multicolumn{2}{c|}{both}
+            %& \multicolumn{2}{c|}{both \& tree}
+            \\
+            \hline
+            \multirow{4}{*}{\rotatebox{90}{Basic}}
+            & Computation Units
+            & $N$
+            & \multicolumn{2}{c|}{$N$}
+            %& \multicolumn{2}{c|}{$N^2$}
+            %& \multicolumn{2}{c|}{$N^3$}
+            \\
+            %\cline{2-9}
+            \cline{2-5}
+            & Memory Space
+            & $4N^2+N$
+            & \multicolumn{2}{c|}{$2N^2+3N$}
+            %& \multicolumn{2}{c|}{$4N^2+N$}
+            %& \multicolumn{2}{c|}{$4N^2+N$}
+            \\
+            %\cline{2-9}
+            \cline{2-5}
+            & Read Access
+            & $4$
+            & \multicolumn{2}{c|}{$N+2$}
+            %& \multicolumn{2}{c|}{$N+3$}
+            %& \multicolumn{2}{c|}{$2N+2$}
+            \\
+            %\cline{2-9}
+            \cline{2-5}
+            & Write Access
+            & $1$
+            & \multicolumn{2}{c|}{$N$}
+            %& \multicolumn{2}{c|}{$N$}
+            %& \multicolumn{2}{c|}{$N$}
+            \\
+            \hline
+            \hline
+            \multirow{4}{*}{\rotatebox{90}{Extended}}
+            & Computation Units
+            & $N+C$
+            & $N+C$ & $(C+1)N$
+            %& \multicolumn{2}{c|}{$(C+1)N^2$}
+            %& \multicolumn{2}{c|}{$N^3+CN^2$}
+            \\
+            %\cline{2-9}
+            \cline{2-5}
+            & Memory Space
+            & $(P+3)N^2+N$
+            & $PN^3+N^2+3N$ & $2N^2+3N$
+            %& \multicolumn{2}{c|}{$2N^2+3N$}
+            %& \multicolumn{2}{c|}{$2N^2+3N$}
+            \\
+            %\cline{2-9}
+            \cline{2-5}
+            & Read Access
+            & $5$
+            & \multicolumn{2}{c|}{$2N+2$}
+            %& \multicolumn{2}{c|}{$2N+3$}
+            %& \multicolumn{2}{c|}{$3N+2$}
+            \\
+            %\cline{2-9}
+            \cline{2-5}
+            & Write Access
+            & $1$
+            & \multicolumn{2}{c|}{$N$}
+            %& \multicolumn{2}{c|}{$N$}
+            %& \multicolumn{2}{c|}{$N$}
+            \\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Pipelined versus parallel architecture for the basic and the
+        extended forward algorithm (C: Number of computation units to compute
+        one CDF, P: Number of parameters to compute one CDF)}
+    \label{tab:summary_D}
+\end{table}
+
 \begin{itemize}
-    \item table presenting an overview of the parallelization options
-    \item discussion on usefulness of each parallelization option
+    \item pipelined if memory interface is bottleneck
+    \item pipelined if CDF computation is complicated
+    \item parallel if on-chip-memory and CDF feasible with limited recourses
+    \item parallel with memory complexity of $O(n^3)$ if on-chip-memory is big
+        or sparse matrix implementation (reduce to $O(N^2)$)
 \end{itemize}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Choice of Accelerator Type}
+\section{choice of accelerator type}
 \label{ch:analysis_choice}
 
 %-------------------------------------------------------------------------------
-\subsection{CPU}
+\subsection{cpu}
 \begin{itemize}
     \item pro
     \begin{itemize}
         \item fast and easy implementation (availability of /, exp, log,
             floating points)
         \item high precision (double, long double)
-        \item high frequency (up to 3 GHz)
+        \item high frequency (up to 3 ghz)
     \end{itemize}
     \item contra
     \begin{itemize}
@@ -830,11 +1123,11 @@ architecture will be discussed in the next section.
 \end{itemize}
 
 %-------------------------------------------------------------------------------
-\subsection{GPU}
+\subsection{gpu}
 \begin{itemize}
     \item pro
     \begin{itemize}
-        \item SIMD: a lot of streaming processors for a low price
+        \item simd: a lot of streaming processors for a low price
         \item a lot of fast onboard memory
         \item high frequency
         \item high precision
@@ -850,7 +1143,7 @@ architecture will be discussed in the next section.
 \end{itemize}
 
 %-------------------------------------------------------------------------------
-\subsection{FPGA}
+\subsection{fpga}
 \begin{itemize}
     \item pro
     \begin{itemize}
@@ -869,7 +1162,7 @@ architecture will be discussed in the next section.
 \end{itemize}
 
 %-------------------------------------------------------------------------------
-\subsection{ASIC}
+\subsection{asic}
 \begin{itemize}
     \item pro
     \begin{itemize}
@@ -886,117 +1179,117 @@ architecture will be discussed in the next section.
 \end{itemize}
 
 %-------------------------------------------------------------------------------
-\subsection{Conclusion}
+\subsection{conclusion}
 \begin{itemize}
     \item target is an embedded system (low power)
     \item optimize memory hierarchy
     \item student budget
-    \item -> use FPGA
+    \item -> use fpga
     \item only standard forward algorithm
-    \item do not use scaling because of division. Instead use custom FP
+    \item do not use scaling because of division. instead use custom fp
         representation
 \end{itemize}
 
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Design and Implementation}
+\chapter{design and implementation}
 \label{ch:design}
 
 \begin{itemize}
     \item parallelization of one of nested for-loop or pipeline the loops
-    \item fully pipelined MACC
+    \item fully pipelined macc
 \end{itemize}
 
-To design the accelerator, the top-down approach was applied: the algorithm is
+to design the accelerator, the top-down approach was applied: the algorithm is
 broken down into blocks, where each of them is broken down further until the
-basic functional blocs of the FPGA can be used for the implementation. The
+basic functional blocs of the fpga can be used for the implementation. the
 implementation follows then the bottom-up approach where each sub-block is
-implemented and tested. Completed blocks are grouped together to bigger blocks
+implemented and tested. completed blocks are grouped together to bigger blocks
 until finally there is only one big block remaining, describing the complete
 algorithm.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Precision}
+\section{precision}
 
-Modern FPGAs contain hardware blocks (DSP slices) that are heavily optimized
-for multiply-accumulate operations as they are often used for DSP applications.
-These devices only operate on integer values. However, the forward algorithm
-requires to multiply and accumulate probabilities, i.e. fractional numbers. To
-being able to use the DSP slices of the FPGA, some hardware must be built
+modern fpgas contain hardware blocks (dsp slices) that are heavily optimized
+for multiply-accumulate operations as they are often used for dsp applications.
+these devices only operate on integer values. however, the forward algorithm
+requires to multiply and accumulate probabilities, i.e. fractional numbers. to
+being able to use the dsp slices of the fpga, some hardware must be built
 around such a slice in order to get a hardware block that can handle the
-multiplication and accumulation of probabilities. To do this, the choice of
-data representation must be made (floating point vs fixed point). First the
+multiplication and accumulation of probabilities. to do this, the choice of
+data representation must be made (floating point vs fixed point). first the
 assumption that all operations must be done with floating point numbers is
 discussed.
 
 \emph{\color{red}the following points need to be explained in more detail}
 
-Floating Point Facts:
-In order to multiply two floating point numbers, the mantissas of
+floating point facts:
+in order to multiply two floating point numbers, the mantissas of
 both numbers are multiplied and the exponents are added (the sign can be
-ignored, as probabilities are always positive). For the multiplication of the
-mantissas the DSP slices can be used. In parallel to this operation, an
-external adder can add up the exponents. Now the tricky part: to being able to
-add floating point numbers the exponents of the numbers must be equal. To
+ignored, as probabilities are always positive). for the multiplication of the
+mantissas the dsp slices can be used. in parallel to this operation, an
+external adder can add up the exponents. now the tricky part: to being able to
+add floating point numbers the exponents of the numbers must be equal. to
 achieve that, the difference of the two exponents is calculated and then the
 mantissa of the number with the lower exponent must be shifted by this
-difference (and possibly rounded/truncated). This process is called
-normalizing. Then the mantissas can be added. Finally the resulting value
+difference (and possibly rounded/truncated). this process is called
+normalizing. then the mantissas can be added. finally the resulting value
 needs to be normalized again.
 
-Scaling: By using floating points, scaling becomes superfluous because the
-exponent allows to represent very small numbers (not respecting IEEE
+scaling: by using floating points, scaling becomes superfluous because the
+exponent allows to represent very small numbers (not respecting ieee
 representations).
 
-Truncation: after the multiply accumulate operation the resulting mantissa of
-48 bits must be truncated to 25 bits. To achieve better results, a rounding
+truncation: after the multiply accumulate operation the resulting mantissa of
+48 bits must be truncated to 25 bits. to achieve better results, a rounding
 operation can be applied.
 
-Fixed Point Facts:
+fixed point facts:
 before each multiplication, the operands need to be reduced from 48 to 18 resp
-25 bits. This must be done by either truncating/rounding the final value or by
+25 bits. this must be done by either truncating/rounding the final value or by
 scaling or by doing both.
 
-Scaling: The proposed scaling method is not usable in this implementation
-because of the division operation. Instead, a scaling in base of 2 should be
-used (shift): In every clock cycle a new value is added to the previous one.
-The masked result can be compared to a bit stream of zeros. A match directly
+scaling: the proposed scaling method is not usable in this implementation
+because of the division operation. instead, a scaling in base of 2 should be
+used (shift): in every clock cycle a new value is added to the previous one.
+the masked result can be compared to a bit stream of zeros. a match directly
 gives the amount of leading zeros (using the number of times the mask has been
-shifted). If there is no match, shift the mask and compare in the next cycle.
-This operation is done with every alpha, while the lowest value of leading
-zeros is kept. Using this method, in most cases at the end of adding up all the
-values, the least number of leading zeros of the N alphas will be known. If in
+shifted). if there is no match, shift the mask and compare in the next cycle.
+this operation is done with every alpha, while the lowest value of leading
+zeros is kept. using this method, in most cases at the end of adding up all the
+values, the least number of leading zeros of the n alphas will be known. if in
 the worst case after the addition of the last alpha-component there is
 a non-match, the pipeline must be stalled and the right leading zeros number
-must be found by shifting the mask further to the left. To do the masked
-comparison, the pattern comparing unit of the DSP-slice of the FPGA can be
-used. The stored values $ \pi $, $ B $ and $ TP $ can be preprocessed and
-scaled, in order to reduce the number of minimal leading zeros to zero. These
+must be found by shifting the mask further to the left. to do the masked
+comparison, the pattern comparing unit of the dsp-slice of the fpga can be
+used. the stored values $ \pi $, $ b $ and $ tp $ can be preprocessed and
+scaled, in order to reduce the number of minimal leading zeros to zero. these
 scaling factors will then be used to recompute the real sequence likelihood.
 
-Truncation: a simple solution is to chop off the leading zeros (as counted) and
+truncation: a simple solution is to chop off the leading zeros (as counted) and
 truncate the value by only using the following 25 bits after the last leading
-zero. A more precise method would be to use rounding.
+zero. a more precise method would be to use rounding.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Data Storage Management}
+\section{data storage management}
 
 \emph{\color{red}the following points need to be explained in more detail}
 
-Facts:
-in each kth step $ N^2*TP $ values and $ N*B $ values are necessary. In case of
-the parallel version, each clock cycle $ N*TP $ and one B value must be made
-available. In case of the serial version one TP or B vale must be made
-available. By reading directly from the RAM, 16 bits can be read with a bus
-frequency of 104MHz. Running the pipeline at 52MHz, the necessary data can be
-provided at each clock cycle in case of the serial implementation. If the
+facts:
+in each kth step $ n^2*tp $ values and $ n*b $ values are necessary. in case of
+the parallel version, each clock cycle $ n*tp $ and one b value must be made
+available. in case of the serial version one tp or b vale must be made
+available. by reading directly from the ram, 16 bits can be read with a bus
+frequency of 104mhz. running the pipeline at 52mhz, the necessary data can be
+provided at each clock cycle in case of the serial implementation. if the
 parallel implementation should be used, an internal memory must be built.
 
 \begin{itemize}
-    \item real-time (time constraints on every Ps) vs on-line (use buffer to
+    \item real-time (time constraints on every ps) vs on-line (use buffer to
         optimize throughput)
     \item memory hierarchy: at startup copy from flash to ram, then use pipeline
         to preload values from ram into registers.
@@ -1004,156 +1297,226 @@ parallel implementation should be used, an internal memory must be built.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Initialization}
+\section{initialization}
 
-Figure \ref{fig:init_s} shows the necessary operation to compute every i-th
+figure \ref{fig:init_s} shows the necessary operation to compute every i-th
 component of the first forward variable $ \alpha_1 $ in the initialization
-step.  The $ N $ components of $ \alpha_1 $ can be computed one by one when
-only one such structure is implemented in hardware. Assuming a fully
+step.  the $ n $ components of $ \alpha_1 $ can be computed one by one when
+only one such structure is implemented in hardware. assuming a fully
 pipelineable multiplier, one component of $ \alpha_1 $ appears in the output
-register at every cycle (with a latency of $ S $ cycles, where $ S $ is the
-number of pipeline stages in the multiplier). To compute all $ N $ components
-of $ \alpha_1 $ with this structure, $ N + S $ cycles are necessary.
-Alternatively the complete initialization can be fully parallelized if the
-structure \ref{fig:init_s} is replicated $ N $ times. In this case, all
-$ N $ components of $ \alpha_1 $ appear at the same time, after $ S $ cycles in
-the output registers. If such a heavy parallelization is useful will be
+register at every cycle (with a latency of $ s $ cycles, where $ s $ is the
+number of pipeline stages in the multiplier). to compute all $ n $ components
+of $ \alpha_1 $ with this structure, $ n + s $ cycles are necessary.
+alternatively the complete initialization can be fully parallelized if the
+structure \ref{fig:init_s} is replicated $ n $ times. in this case, all
+$ n $ components of $ \alpha_1 $ appear at the same time, after $ s $ cycles in
+the output registers. if such a heavy parallelization is useful will be
 analyzed after all stages have been described.
 
 \begin{figure}
     \includegraphics[width=1\columnwidth]{./schema/arch_init_s.png}
-    \caption{Initialisation step with one MACC}
+    \caption{initialisation step with one macc}
     \label{fig:init_s}
 \end{figure}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{k-th Forward Variable}
+\section{k-th forward variable}
 \emph{\color{red}better title?}
 
 \begin{itemize}
-    \item one pipelined MACC for the computation of all elements
-    \item $ N $ pipelined MACC, each computing one $ \alpha_k $
-    \item use optimized Matrix-Vector-Vector multiplication
-        $ \alpha_{k+1} = TP * \alpha_k * B(o_k) $
+    \item one pipelined macc for the computation of all elements
+    \item $ n $ pipelined macc, each computing one $ \alpha_k $
+    \item use optimized matrix-vector-vector multiplication
+        $ \alpha_{k+1} = tp * \alpha_k * b(o_k) $
         \cite{FCCM12_Kestur, ITNG07_Yang}
 \end{itemize}
 
 \begin{figure}
     \includegraphics[width=1\columnwidth]{./schema/arch_step_s.png}
-    \caption{k-th step with one MACC unit}
+    \caption{k-th step with one macc unit}
     \label{fig:step_s}
 \end{figure}
 \begin{figure}
     \includegraphics[width=1\columnwidth]{./schema/arch_shift_reg_s.png}
-    \caption{Example of input shift register with N=2}
+    \caption{example of input shift register with n=2}
     \label{fig:shift_reg_s}
 \end{figure}
 
 \begin{figure}
     \includegraphics[width=1\columnwidth]{./schema/arch_step_p.png}
-    \caption{k-th step with $ N+1 $ MACC units and integrated computation of P
+    \caption{k-th step with $ n+1 $ macc units and integrated computation of p
         (which is only needed at the last step)}
     \label{fig:step_p}
 \end{figure}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Serial Controller}
+\section{serial controller}
 
 \begin{figure}
     \includegraphics[width=1\columnwidth]{./schema/arch_ctrl.png}
-    \caption{Controller of serial implementation}
+    \caption{controller of serial implementation}
     \label{fig:ctrl}
 \end{figure}
 
-\emph{\color{red} in table \ref{tab:ctrl} the signals flush\_Ps and load\_out
-are only set in the first iteration. Add a footnote?}
+\emph{\color{red} in table \ref{tab:ctrl} the signals flush\_ps and load\_out
+are only set in the first iteration. add a footnote?}
+
+%\begin{table}
+%    \begin{center}
+%    \begin{tabular}{|l|c|c|c|c|c|c|c|}
+%    \hline
+%    signal            & init & select & macc & conciliate & mul & store & flush \\
+%    \hline
+%    \hline
+%    shift\_alpha\_in  & 0    & 0      & 1    & 0          & 0   & 0     & 0     \\
+%    shift\_alpha\_out & 0    & 0      & 0    & 0          & 0   & 1     & 0     \\
+%    conciliate        & 0    & 0      & 0    & 1          & 0   & 0     & 0     \\
+%    enable\_init      & 0    & 0      & 0    & 0          & 1   & 0     & 0     \\
+%    enable\_step      & 0    & 0      & 1    & 1          & 1   & 0     & 0     \\
+%    enable\_final     & 0    & 1      & 0    & 0          & 0   & 0     & 0     \\
+%    flush             & 0    & 0      & 0    & 0          & 0   & 0     & 1     \\
+%    \hline
+%    \end{tabular}
+%    \end{center}
+%    \caption{control signals}
+%    \label{tab:ctrl}
+%\end{table}
 
 \begin{table}
+    \footnotesize
     \begin{center}
-    \begin{tabular}{|l|c|c|c|c|c|c|c|}
+    \begin{tabular}{|c|l|*{10}{c|}}
     \hline
-                      & INIT & SELECT & MACC & CONCILIATE & MUL & STORE & FLUSH \\
+    type & signal                      & init & select & macc & conciliate & shift1 & shift2 & mul & store & flush & input       \\
     \hline
-    shift\_alpha\_in  & 0    & 0      & 1    & 0          & 0   & 0     & 0     \\
-    shift\_alpha\_out & 0    & 0      & 0    & 0          & 0   & 1     & 0     \\
-    conciliate        & 0    & 0      & 0    & 1          & 0   & 0     & 0     \\
-    enable\_init      & 0    & 0      & 0    & 0          & 1   & 0     & 0     \\
-    enable\_step      & 0    & 0      & 1    & 1          & 1   & 0     & 0     \\
-    enable\_final     & 0    & 1      & 0    & 0          & 0   & 0     & 0     \\
-    flush             & 0    & 0      & 0    & 0          & 0   & 0     & 1     \\
+    \hline
+         & pi\_we                      &      &        &      &            &        &        &      &      &       & input       \\
+         & tp\_we                      &      &        &      &            &        &        &      &      &       & input       \\
+         & b\_we                       &      &        &      &            &        &        &      &      &       & input       \\
+         & data\_ready                 &      &        &      &            &        &        &      &      &       & input       \\
+    1    & enable\_count               & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     & pi\_we      \\
+    2    & enable\_ctrl                & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
+    3    & enable\_init                & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     & data\_ready \\
+    3    & enable\_init\_mul           & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     & data\_ready \\
+    4    & enable\_step                & 0    & 0      & 1    & 1          & 1      & 1      & 1    & 0    & 0     & data\_ready \\
+    4    & enable\_step\_macc          & 0    & 0      & 1    & 1          & 1      & 1      & 1    & 0    & 0     & data\_ready \\
+    5    & enable\_final               & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
+    4    & laod\_op2                   & 0    & 0      & 1    & 1          & 1      & 1      & 1    & 0    & 0     & data\_ready \\
+    6    & load\_step\_alpha           & 0    & 0      & 1    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
+    7    & load\_final\_alpha          & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
+    8    & load\_scale\_new            & 0    & 1(d)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
+    9    & load\_scale\_acc            & 0    & 1      & 0    & 0          & o      & 0      & 0    & 0    & 0     &             \\
+    7    & store\_init\_scale\_new     & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
+    23   & store\_init\_scale\_small   &      & 1(d)   &      &            &        &        &      &      &       & or internal \\
+    9    & store\_init\_scale\_ok      & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
+    7    & store\_step\_alpha          & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
+    7    & store\_step\_scale\_new     & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
+    23   & store\_step\_scale\_small   &      & 1(d)   &      &            &        &        &      &      &       & or internal \\
+    9    & store\_step\_scale\_ok      & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
+    5    & store\_final\_ps            & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
+    10   & store\_final\_ps\_delayed   & 0    & 1(d)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
+    10   & store\_final\_scale         & 0    & 1(d)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
+    11   & shift\_step\_acc            & 0    & 0      & 0    & 1(6)       & 0      & 0      & 0    & 0    & 0     &             \\
+    12   & sel\_mux2\_op2              & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     &             \\
+    13   & sel\_step\_read\_fifo       &      & (*)    &      &            &        &        &      &      &       & special     \\
+    12   & sel\_step\_op1              & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     &             \\
+    14   &                             & 0    & 0      & 0    & 1          & 1      & 0      & 0    & 0    & 0     &             \\
+    15   &                             & 0    & 0      & 0    & 1          & 0      & 1      & 0    & 0    & 0     &             \\
+    16   & sel\_step\_op2              & 0    & 0      & 0    & 1(5)       & 1      & 1      & 0    & 0    & 0     &             \\
+    17   & flush\_init                 & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1     &             \\
+    17   & flush\_step\_macc           & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1     &             \\
+    18   & flush\_step\_acc            & 0    & 0      & 0    & 0          & 0      & 1      & 0    & 0    & 0     &             \\
+    9    & flush\_step\_fifo           & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
+         & reset\_n                    & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & input       \\
+    19   & reset\_count\_n             & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_op2\_n               & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_ctrl\_n              & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_init\_n              & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    20   & reset\_init\_mul\_n         & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1(n)  & reset\_n    \\
+    19   & reset\_step\_n              & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    20   & reset\_step\_macc\_n        & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1(n)  & reset\_n    \\
+    21   & reset\_step\_fifo0          & 0    & 1(*(n))& 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset       \\
+    22   & reset\_step\_fifo1          & 0    & 1(*)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset       \\
+    19   & reset\_step\_scale\_new\_n  & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_step\_scale\_small\_n& 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_step\_scale\_ok\_n   & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_init\_scale\_new\_n  & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_init\_scale\_small\_n& 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_init\_scale\_ok\_n   & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_final\_n             & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
     \hline
     \end{tabular}
     \end{center}
-    \caption{Control signals}
-    \label{tab:ctrl}
+    \caption{detailed control signals}
+    \label{tab:ctrl_detailed}
 \end{table}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Balancing Pipeline Stages}
+\section{balancing pipeline stages}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Practical Notes}
+\section{practical notes}
 
 \begin{itemize}
-    \item generic design (change N, L and bit widths in param\_pkg)
+    \item generic design (change n, l and bit widths in param\_pkg)
     \item if bit widths of op1 is changed, fifo\_512x25 must be regenerated
 \end{itemize}
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Testing and Verification}
+\chapter{testing and verification}
 \label{ch:test}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Device}
+\section{device}
 \label{ch:test_dev}
 
 \begin{itemize}
-    \item Nexys4 board with Artix-7 FPGA
+    \item nexys4 board with artix-7 fpga
     \item limited recourses -> proof of concept
     \item bord hardware for testing
 \end{itemize}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Relation to Proposed Algorithm}
+\section{relation to proposed algorithm}
 \label{ch:test_prop}
 
 %-------------------------------------------------------------------------------
-\subsection{Log Standard}
+\subsection{log standard}
 
 %-------------------------------------------------------------------------------
-\subsection{Metrics}
+\subsection{metrics}
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Results}
+\chapter{results}
 \label{ch:res}
 %-------------------------------------------------------------------------------
-\section{Speedup}
+\section{speedup}
 \label{ch:res_speed}
 %-------------------------------------------------------------------------------
-\section{Accuracy}
+\section{accuracy}
 \label{ch:res_prec}
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Conclusion}
+\chapter{conclusion}
 \label{ch:conc}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Achievements}
+\section{achievements}
 \label{ch:conc_ach}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Future Work}
+\section{future work}
 \label{ch:conc_work}
 
 \nocite{*}
@@ -1162,12 +1525,12 @@ are only set in the first iteration. Add a footnote?}
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Some material}
-%\section{It's over\dots}
+\chapter{some material}
+%\section{it's over\dots}
 
 \backmatter
 
-%\chapter{Glossary} %optional
+%\chapter{glossary} %optional
 
 %\bibliographystyle{alpha}
 %\bibliographystyle{dcu}
