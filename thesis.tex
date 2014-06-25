@@ -977,24 +977,27 @@ changing in the same order.
     \label{tab:summary_O}
 \end{table}
 
-The two first columns show that the smaller latency of the parallel architecture
-comes at the price of a larger memory interface (simultaneous memory access
-is required). By combining both architectures (3rd column), the throughput can
-be increased by factor $N$ at the cost of increasing the order of computation
-units. Adding also the reduction tree, throughput and latency are increased, 
-resp. decreased by an additional factor of $\log N$. This comes again at the
-cost of increasing the order of computation units further. While the benefits
-are welcome, $N^3$ is simply to high to realistically implement such a solution.
-Already with a small $N$ a huge server farm or thousands of FPGAs or GPUs would
-be necessary. Computation units in an order of $N^2$ (2nd column) is feasible
-for small $N$ by combining multiple devices. While this may be acceptable for
-a very important computation where lots of people depend upon (eg. weather
-forecast, Google queries, etc.) failure prediction hardly falls into this
-category especially if failures of an embedded system are predicted.
+The two first columns show that the smaller latency of the parallel
+architecture comes at the price of a larger memory interface (simultaneous
+memory access is required). By combining both architectures (3rd column), the
+throughput can be increased by factor $N$ at the cost of increasing the order
+of computation units. Adding also the reduction tree, throughput and latency
+are increased, resp. decreased by an additional factor of $\log N$. This comes
+again at the cost of increasing the order of computation units further. While
+the benefits are welcome, $N^3$ is simply to high to realistically implement
+such a solution.  Already with a small $N$ a huge server farm or thousands of
+FPGAs or GPUs would be necessary. Considering this, the reduction tree
+parallelization method will not be used as it gives the fewest benefits
+($O(LogN)$) for its cost ($O(N)$).  Computation units in an order of $N^2$ (2nd
+column) is feasible for small $N$ by combining multiple devices. While this may
+be acceptable for a very important computation where lots of people depend upon
+(eg. weather forecast, Google queries, etc.) failure prediction hardly falls
+into this category especially if failures of an embedded system are predicted.
 Additionally, using multiple devices in order to scale the problem, implies
 off-chip-communication and -memory. This will result in huge bottlenecks and
 have a huge impact on the actual speedup. This leaves the first two columns to
-compare for the application at hand.
+compare for the application at hand (A combination of both methods can still be
+considered, but not by using maximal parallelization).
 
 Table \ref{tab:summary_D} now only compares the pipelined architecture with the
 parallel architecture but with more detailed estimations of resource usage.
@@ -1019,7 +1022,7 @@ memory usage or the number of computational units (hence the two columns).
             \hline
             \multirow{4}{*}{\rotatebox{90}{Basic}}
             & Computation Units
-            & $N$
+            & $L$
             & \multicolumn{2}{c|}{$N$}
             %& \multicolumn{2}{c|}{$N^2$}
             %& \multicolumn{2}{c|}{$N^3$}
@@ -1027,7 +1030,7 @@ memory usage or the number of computational units (hence the two columns).
             %\cline{2-9}
             \cline{2-5}
             & Memory Space
-            & $4N^2+N$
+            & $2N^2+2LN+N$
             & \multicolumn{2}{c|}{$2N^2+3N$}
             %& \multicolumn{2}{c|}{$4N^2+N$}
             %& \multicolumn{2}{c|}{$4N^2+N$}
@@ -1052,7 +1055,7 @@ memory usage or the number of computational units (hence the two columns).
             \hline
             \multirow{4}{*}{\rotatebox{90}{Extended}}
             & Computation Units
-            & $N+C$
+            & $L+C$
             & $N+C$ & $(C+1)N$
             %& \multicolumn{2}{c|}{$(C+1)N^2$}
             %& \multicolumn{2}{c|}{$N^3+CN^2$}
@@ -1060,8 +1063,8 @@ memory usage or the number of computational units (hence the two columns).
             %\cline{2-9}
             \cline{2-5}
             & Memory Space
-            & $(P+3)N^2+N$
-            & $PN^3+N^2+3N$ & $2N^2+3N$
+            & $(P+1)N^2+2LN+N$
+            & $PL(1+N^2)+3N$ & $(P+1)N^2+3N$
             %& \multicolumn{2}{c|}{$2N^2+3N$}
             %& \multicolumn{2}{c|}{$2N^2+3N$}
             \\
@@ -1090,106 +1093,178 @@ memory usage or the number of computational units (hence the two columns).
     \label{tab:summary_D}
 \end{table}
 
-\begin{itemize}
-    \item pipelined if memory interface is bottleneck
-    \item pipelined if CDF computation is complicated
-    \item parallel if on-chip-memory and CDF feasible with limited recourses
-    \item parallel with memory complexity of $O(n^3)$ if on-chip-memory is big
-        or sparse matrix implementation (reduce to $O(N^2)$)
-\end{itemize}
+The benefits of a parallel architecture over the pipelined are first and
+foremost the reduced latency and in case of the basic algorithm also the lower
+memory footprint. If the acceleration architecture of choice has a memory
+interface that allows the required throughput, for the basic algorithm this
+architecture should be chosen. In case of the extended algorithm this is only
+possible if enough computational units are available (and the CDF computation
+is not to complex) or if the on-chip memory is large enough to save transition
+probabilities for later use.
+
+For the basic algorithm, the pipelined architecture should only be chosen if
+the memory interface becomes the bottleneck (for large N). Ideally
+a combination of the parallel architecture and the pipeline should be chosen in
+order to maximize the memory interface usage. By doing this, a smaller latency
+is achieved by keeping the throughput high. Another reason to chose the
+pipelined architecture would be a simple state transition model (cf. section
+\ref{ch:analysis_simple}) which allows to save only the non-zero transition
+probabilities in a list. From this optimisation the pipelined architecture
+benefits on a much larger scale as less serial accumulations would be
+necessary, while in the parallel architecture only the utilization of the
+computational units would be reduced (less power consumption but no impact on
+performance).
+
+In case of the extended forward algorithm, it is almost always better to choose
+the pipelined architecture: It uses either less memory or less computational
+units, allows optimization in case of simple models and allows more time to
+compute the transition probabilities. Parallelization is only possible for very
+simple CDF computations and for a small $N$.
+
+The scalability is in both cases limited, but more so with the parallel
+architecture: If $N$ or $L$ becomes large such that
+off-chip memory is necessary (already for very small $N$ or $L$ for CPUs and
+GPUS, less so for more flexible architectures like FPGAs or ASICs) the memory
+interface will be to small to handle memory access simultaneously and hence
+become the bottleneck. The pipelined architecture does not have this drawback
+but has a slightly higher memory footprint. If memory can be handled on-chip but
+multiple chips are used to increase the number of recourses, both
+architectures can be scaled easily in $L$ dimension (sequence length) but only
+with difficulty in $N$ dimension (number of states) because the necessary
+communication links (all components of the vector $\alpha_{k+1}$ always depends
+on all components of the vector $\alpha_k$). The scaling in dimension $N$ of the
+pipelined architecture only depends on the memory usage, while the parallel
+architecture has a dependency of $N$ for the computation units as well as for
+the memory.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{choice of accelerator type}
+\section{Choice of Accelerator Type}
 \label{ch:analysis_choice}
 
-%-------------------------------------------------------------------------------
-\subsection{cpu}
-\begin{itemize}
-    \item pro
-    \begin{itemize}
-        \item fast and easy implementation (availability of /, exp, log,
-            floating points)
-        \item high precision (double, long double)
-        \item high frequency (up to 3 ghz)
-    \end{itemize}
-    \item contra
-    \begin{itemize}
-        \item high power consumption
-        \item limited parallelization (limited number of cores)
-        \item large overhead (because of instruction pipeline)
-        \item fixed architecture (memory, computation units)
-    \end{itemize}
-\end{itemize}
+For being able to choose an appropriate accelerator type, first a list with
+different acceleration options is presented. For each type the most common
+benefits and shortcomings are mentioned. At the end of the section a choice
+will be made using the following list and the observations discussed in the
+previous sections.
 
-%-------------------------------------------------------------------------------
-\subsection{gpu}
-\begin{itemize}
-    \item pro
-    \begin{itemize}
-        \item simd: a lot of streaming processors for a low price
-        \item a lot of fast onboard memory
-        \item high frequency
-        \item high precision
-        \item simple implementation (availability of /, exp, log,
-            floating points)
-    \end{itemize}
-    \item contra
-    \begin{itemize}
-        \item high power consumption
-        \item overhead for simple instructions (instruction pipeline)
-        \item fixed architecture (memory, computation units)
-    \end{itemize}
-\end{itemize}
+\begin{description}
+    \item[CPU] \hfill \\
+        The Central Processing Unit falls into the class of the general purpose
+        processors and is (usually) of the type SISD\footnote{Flynn's Taxonomy:
+        Single Instruction, Single Data Stream}. It is very flexible in terms
+        of software interpretation (with the use of compilers) and allows to
+        implement any kind of function in a fast, easy and maintainable
+        fashion with no requirements in hardware knowledge.  Operations like
+        division, exponential function and logarithm are available as well as
+        the floating point number representation. All operations can be
+        executed with very high precision and at high clock frequencies (up to
+        3 GHz). CPUs come with the drawback of a high power consumption,
+        limited parallelization options (small number of cores) and a fixed
+        hardware architecture that causes big computation overheads
+        (instruction pipeline, memory hierarchy, generalized computation
+        units).
+    \item[GPU] \hfill \\
+        Like the CPU, the Graphics Processing Unit still falls into the class
+        of general purpose processors due to the hardware abstraction layers.
+        A GPU is composed of a lot of small but quite powerful streaming
+        processors of the type SIMD\footnote{Flynn's Taxonomy: Single
+        Instruction, Multiple Data Streams}. This processing power allows a lot
+        of parallelization at a low price. As the CPU, also the GPU is very
+        flexible in terms of software interpretation, requires however some
+        hardware understanding in order to use the parallel power in an optimal
+        way. Also a GPU allows to work with operations like division, exp and
+        log functions and provides floating point number representation. GPUs
+        can work with high precision and at high clock frequencies. The power
+        consumption of a GPU is very high due to the high frequencies and the
+        streaming processors. While the hardware abstraction layer provides
+        flexibility in software and ease of use, it is the main reason for
+        a computation overhead for basic operations. The fixed hardware
+        architecture (especially the memory hierarchy) can prove to be
+        a drawback in specific cases (eg. data usage provokes always cache
+        misses).
+    \item[DSP] \hfill \\
+        The Digital Signal Processor is a specialized integrated circuit,
+        largely used for digital signal processing. The key components of DSPs
+        are optimized Multiply-Accumulate instructions, special SIMD operations
+        and for DSP operation optimized memory architecture. They provide
+        a hardware abstraction and are pretty easy to program. This causes
+        some overhead as an instruction pipeline is necessary. The overhead is
+        a lot smaller than in the case of CPUs because of specific instructions
+        sets (this comes with a loss of flexibility). Fixed point as well as
+        floating point devices exist with various precisions. A DSP provides
+        a lot of specific computation power for a low price.
+    \item[FPGA] \hfill \\
+        The Field Programmable Gate Array is a customizable integrated circuit.
+        It provides large recourses of logic gates as well as standard blocks
+        such as RAM or highly optimized Multiply-Accumulate units. FPGAs
+        provide high performance for very specific design optimized for one
+        function. Once an FPGA is configured, as long as it keeps this
+        configuration no other function will run on this device as it is the
+        direct hardware representation of the function. This direct
+        representation allows a very low overhead as operations are done
+        directly in hardware without any instruction pipeline. FPGAs provide
+        a high amount of hardware flexibility that is only toped by ASICs (see
+        below). This flexibility comes at a medium price as FPGAs can be
+        produced in big lots but are more difficult to produce than DSPs.
+        A huge advantage is the possibility the build very big memory
+        interfaces inside the chip and customize the memory architecture for
+        the application at hand. The drawback of FPGAs is the increased
+        development time necessary to implement a hardware solution of
+        a function, the "low" clock frequency of up to 500MHz (this is low
+        compared to CPUs or GPUs) and the absence of division, exponential and
+        logarithm functions. All units are optimized for fixed point
+        representation and floating point numbers must be implemented manually.
+        Core generators and very powerful synthesis tools try to amend these
+        drawbacks but still a very deep knowledge of hardware is necessary to
+        successfully implement a design on FPGA.
+    \item[ASIC] \hfill \\
+        The Application Specific Integrated Circuit is, as the name already
+        tells, an integrated circuit that has been designed for one (and only
+        one) specific application. In comparison to the FPGA, an ASIC is built
+        with fully customized elements and provides the full flexibility
+        achievable with todays hardware knowledge. An ASIC has ideally no
+        overhead as the hardware is a direct mapping of the function. This
+        leads to very high performance at very low power consumption (as a rule
+        of thumb a factor of 1000 can be assumed in either performance gain or
+        power consumption decrease or a combination of both compared to CPUs).
+        An ASICs is very expensive to produce. This includes the long
+        development time and the production cost. Of course very deep hardware
+        knowledge is necessary to create an ASIC of a specific function.
+\end{description}
 
-%-------------------------------------------------------------------------------
-\subsection{fpga}
-\begin{itemize}
-    \item pro
-    \begin{itemize}
-        \item low power consumption
-        \item low overhead
-        \item flexibility
-        \item optimized floating point representation (small values)
-    \end{itemize}
-    \item contra
-    \begin{itemize}
-        \item low frequency
-        \item parallelization is expensive
-        \item precision is expensive
-        \item complex implementation
-    \end{itemize}
-\end{itemize}
+Comparing the accelerator types mentioned in the list above in a general manner,
+one can conclude that the further down the list one goes, the better is the
+performance - prower consumption ratio and the lower is the flexibility of the
+device to accept general function descriptions (a function description for a
+FPGA must be a lot more specific than one for a GPU). For this work, one key point
+is high performance, because the algorithm to implement is computation
+intensive and needs to be executed fast. Another important point is the size of
+the system: the target application to predict failures is an embedded system,
+where space is usually limited. Power consumption may not be a main aspect, but
+it certainly needs to be considered to not exceed requirements of the main
+system.
 
-%-------------------------------------------------------------------------------
-\subsection{asic}
-\begin{itemize}
-    \item pro
-    \begin{itemize}
-        \item very low power consumption
-        \item no overhead
-        \item very flexible
-        \item optimized floating point representation (small values)
-    \end{itemize}
-    \item contra
-    \begin{itemize}
-        \item very expensive
-        \item very complex implementation
-    \end{itemize}
-\end{itemize}
-
-%-------------------------------------------------------------------------------
-\subsection{conclusion}
-\begin{itemize}
-    \item target is an embedded system (low power)
-    \item optimize memory hierarchy
-    \item student budget
-    \item -> use fpga
-    \item only standard forward algorithm
-    \item do not use scaling because of division. instead use custom fp
-        representation
-\end{itemize}
-
+Due to the limited parallelization options or the huge power and space
+requirements of CPUs, this accelerator type is not suitable for the application
+in question. GPUs provide a lot of computation power at a low price but have
+drawbacks in terms of architecture flexibility, space and power requirements.
+GPUs are a far better option than CPUs but may not be ideal because of the
+fixed memory interface. DSPs would be the device of choice if only the basic
+forward algorithm is considered. Due to the high performance at a low cost of
+DSPs, and the fact that the basic forward algorithm mainly uses
+multiply-accumulate operations one or multiple floating point DSP devices could
+be used to efficiently implement the algorithm. In case of the extended
+algorithm a DSP device causes to big an overhead to compute the CDF and will be
+the bottleneck of the design. For this reason a more flexible device must be
+chosen.  The most flexible architecture is an ASIC. ASICs are very expensive in
+terms of money and development time, two recourses that are not available for
+this work. This leaves the FPGA: An FPGA combines the parallel power of DSPs
+for Multiply-Accumulate operations but adds the possibility to design
+a specific hardware architecture to compute the transition probabilities needed
+for the extension. While the performance will not be at a level of an ASIC, the
+specialized hardware will still outperform any other device because of the
+customizable memory interface (even at the lower frequencies of FPGAs).
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
