@@ -790,7 +790,7 @@ explained in detail in chapter \ref{ch:design}.
 
 Another aspect to consider is the choice of data representation (floating point
 versus fixed point). This depends on one hand on the necessary precision and on
-the other hand on the choice of accelerator type.  While general purpose
+the other hand on the choice of accelerator type. While general purpose
 hardware such as CPU, GPU and DSP (to some degree) offer an abstraction to make
 the representation type transparent to the developer, specialized hardware such
 as FPGA or ASCI offer no such abstraction. For the later devices, floating
@@ -810,8 +810,6 @@ The trade-off between the choice of using scaling or not versus the choice of
 the precision and the data representation, will be analyzed in more detail in
 chapter \ref{ch:design}, when the technology of the accelerator has been
 chosen.
-
-\emph{\color{red}add sources for fixed point vs floating point discussions}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -1233,17 +1231,25 @@ previous sections.
         knowledge is necessary to create an ASIC of a specific function.
 \end{description}
 
-Comparing the accelerator types mentioned in the list above in a general manner,
-one can conclude that the further down the list one goes, the better is the
-performance - prower consumption ratio and the lower is the flexibility of the
-device to accept general function descriptions (a function description for a
-FPGA must be a lot more specific than one for a GPU). For this work, one key point
-is high performance, because the algorithm to implement is computation
-intensive and needs to be executed fast. Another important point is the size of
-the system: the target application to predict failures is an embedded system,
-where space is usually limited. Power consumption may not be a main aspect, but
-it certainly needs to be considered to not exceed requirements of the main
-system.
+Comparing the accelerator types mentioned in the list above in a general
+manner, one can conclude that the further down the list one goes, the better is
+the performance - prower consumption ratio and the lower is the flexibility of
+the device to accept general function descriptions (cf figure \ref{fig:hw}, eg.
+a function description for a FPGA must be a lot more specific than one for
+a GPU but the performance-power consumption ratio is a lot better in case of
+the FPGA). For this work, one key point is high performance, because the
+algorithm to implement is computation intensive and needs to be executed fast.
+Another important point is the size of the system: the target application to
+predict failures is an embedded system, where space is usually limited. Power
+consumption may not be a main aspect, but it certainly needs to be considered
+to not exceed requirements of the main system.
+
+\begin{figure}
+    \centering
+    \input{./schema/hw.tex}
+    \caption{Flexibilty versus Performance of Hardware Devices}
+    \label{fig:hw}
+\end{figure}
 
 Due to the limited parallelization options or the huge power and space
 requirements of CPUs, this accelerator type is not suitable for the application
@@ -1347,6 +1353,10 @@ scaling factors will then be used to recompute the real sequence likelihood.
 truncation: a simple solution is to chop off the leading zeros (as counted) and
 truncate the value by only using the following 25 bits after the last leading
 zero. a more precise method would be to use rounding.
+
+\cite{smith97, ti04} discuss the choice of fixed point versus floating point
+representation with respect to DSP devices. This is also applicable for FPGAs.
+
 
 %-------------------------------------------------------------------------------
 %===============================================================================
