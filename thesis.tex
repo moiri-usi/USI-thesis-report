@@ -705,10 +705,10 @@ a simpler model. By adding more constraints to the possible state transitions
 probability matrix are non-zero. In this case it is beneficial to use an array
 (adjacency list) instead of a matrix to represent the transition probabilities.
 Different methods have been proposed on how to store sparse matrices, but they
-are usually stonily dependant of the architecture and will hence be discussed
-only after the type acceleration device has been chosen.  A list with only
+are usually strongly dependant of the architecture and will hence be discussed
+only after the type of acceleration device has been chosen. A list with only
 non-zero elements instead of a sparse matrix reduces the necessary memory to
-store the data and makes a lot of computations superfluous.  A Matrix-Vector
+store the data and makes a lot of computations superfluous. A Matrix-Vector
 multiplication parallelization as described in the previous section would not
 be beneficial anymore as a lot of computational units would be idle in most of
 the time.
@@ -1433,6 +1433,25 @@ analyzed after all stages have been described.
     \caption{k-th step with $ n+1 $ macc units and integrated computation of p
         (which is only needed at the last step)}
     \label{fig:step_p}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \input{./schema/arch_step_s.tex}
+    \caption{Implementation of one step in a pipelined architecture, including
+        scaling}
+    \label{fig:step_s}
+\end{figure}
+
+%-------------------------------------------------------------------------------
+%===============================================================================
+\section{Scaling}
+
+\begin{figure}
+    \centering
+    \input{./schema/scale.tex}
+    \caption{Simple scaling with shifter}
+    \label{fig:scale}
 \end{figure}
 
 %-------------------------------------------------------------------------------
