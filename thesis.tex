@@ -175,7 +175,7 @@ the work.
 \label{ch:intro_cont}
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Document Structure}
+\section{Structure}
 \label{ch:intro_struct}
 
 %===============================================================================
@@ -245,6 +245,9 @@ and its implementation on a FPGA for SVMs.
 \chapter{Event-based Failure Prediction}
 \label{ch:event}
 
+\emph{\color{red} describe complete concept in a brief overview: non-failure
+model, failure models, classification}
+
 This section provides a brief overview of the computational steps done by the
 proposed algorithm \cite{salfner08}.
 
@@ -272,7 +275,7 @@ $ t_{k-1} $ is described as
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Model Training}
+\section{Training of the Model}
 \label{ch:event_train}
 
 One part of the algorithm is the model training. This part is not described
@@ -411,6 +414,13 @@ To calculate $ \theta $, the following parameters need to be set:
     \item $ r_{F\bar{F}} $: false negative prediction
 \end{itemize}
 
+%-------------------------------------------------------------------------------
+%===============================================================================
+\section{Metrics}
+\label{ch:event_metrics}
+
+\emph{\color{red}cite results from Felix}
+
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Theoretical Analysis of the Forward Algorithm}
@@ -502,7 +512,7 @@ which is of the order $O(N^2)$.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Available Parallelism}
+\section{Parallelism and Faisable Parallelization}
 \label{ch:analysis_parallel}
 
 By applying parallelization methods one aims to increase the throughput or
@@ -694,7 +704,7 @@ implementations.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Simple Models}
+\section{Prediction Model Simplification}
 \label{ch:analysis_simple}
 
 Until now, it was always assumed, that the model is fully connected (ergodic),
@@ -752,6 +762,7 @@ By analyzing the operands, an average scaling factor can be computed. Using the
 knowledge, that all the operands are probabilities,
 
 \begin{equation}
+    \label{eq:scaling_sum}
     \sum\limits_{i=1}^{N} \pi_i = 1, \
     \sum\limits_{j=1}^{N} tp_{ij} = 1, \
     \sum\limits_{j=1}^{M} b_{ij} = 1
@@ -760,6 +771,7 @@ knowledge, that all the operands are probabilities,
 and doing the computation of the forward variables,
 
 \begin{equation}\begin{split}
+    \label{eq:scaling_estimation}
     &\hat{\alpha}_1 = \hat{b} \cdot \hat{\pi} = \frac{1}{NM} \\
     &\hat{\alpha}_2 = N \cdot \hat{\alpha}_1 \cdot \hat{tp} \cdot \hat{b} =
         N \cdot \frac{1}{NM} \cdot \frac{1}{N} \cdot \frac{1}{M} =
@@ -923,7 +935,7 @@ $N$ subtracters to correct the diagonal elements.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Reasonable Parallelism and Scalability}
+\section{Parallelization Options and Scalability}
 \label{ch:analysis_all}
 
 In the sections above, a lot of parallelization has been proposed. A maximal
@@ -1137,8 +1149,10 @@ the memory.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Choice of Accelerator Type}
+\section{Selection of an Appropriate Accelerator Type}
 \label{ch:analysis_choice}
+
+\emph{\color{red}better title?}
 
 For being able to choose an appropriate accelerator type, first a list with
 different acceleration options is presented. For each type the most common
@@ -1274,93 +1288,269 @@ customizable memory interface (even at the lower frequencies of FPGAs).
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{design and implementation}
+\chapter{Design and Implementation}
 \label{ch:design}
 
-\begin{itemize}
-    \item parallelization of one of nested for-loop or pipeline the loops
-    \item fully pipelined macc
-\end{itemize}
+Following the argumentation of the previous chapter, this chapter will describe
+the design of the pipelined architecture of the extended forward algorithm on
+a FPGA.
 
-to design the accelerator, the top-down approach was applied: the algorithm is
+To design the accelerator, the top-down approach was applied: the algorithm is
 broken down into blocks, where each of them is broken down further until the
-basic functional blocs of the fpga can be used for the implementation. the
+basic functional blocs of the FPGA can be used for the implementation. The
 implementation follows then the bottom-up approach where each sub-block is
-implemented and tested. completed blocks are grouped together to bigger blocks
+implemented and tested. Completed blocks are grouped together to bigger blocks
 until finally there is only one big block remaining, describing the complete
 algorithm.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{precision}
+\section{Architecture}
+\label{ch:design_arch}
 
-modern fpgas contain hardware blocks (dsp slices) that are heavily optimized
-for multiply-accumulate operations as they are often used for dsp applications.
-these devices only operate on integer values. however, the forward algorithm
-requires to multiply and accumulate probabilities, i.e. fractional numbers. to
-being able to use the dsp slices of the fpga, some hardware must be built
-around such a slice in order to get a hardware block that can handle the
-multiplication and accumulation of probabilities. to do this, the choice of
-data representation must be made (floating point vs fixed point). first the
-assumption that all operations must be done with floating point numbers is
-discussed.
+The top architecture of the proposed algorithm is depicted in figure
+\ref{fig:arch_top}. The non-failure as well as all the failure sequence
+detection blocks denoted as "non-failure" and "failure type s" represent each
+the complete forward algorithm as it was described in the previous chapter.
+A system controller, denoted as "SYS CTRL" governs these blocks and the flash
+(FLASH CRTL)and memory controllers (RAM CTRL) load data from persistent
+respectively from volatile memory devices into the system. All the prediction
+blocks calculate a sequence likelihood and feed it to the classifier denoted as
+"classification". The classifier then decides if the present sequence leads to
+a failure or not and outputs this result as a boolean value. In terms of
+hardware, all the "failure" blocks are identical and can be run in parallel.
+They only differ by the values that are fed into the internal memory of the
+blocks.
 
-\emph{\color{red}the following points need to be explained in more detail}
+\begin{figure}
+    \centering
+    \input{./schema/arch_top.tex}
+    \caption{Top architecture of the failure prediction algorithm}
+    \label{fig:arch_top}
+\end{figure}
 
-floating point facts:
-in order to multiply two floating point numbers, the mantissas of
-both numbers are multiplied and the exponents are added (the sign can be
-ignored, as probabilities are always positive). for the multiplication of the
-mantissas the dsp slices can be used. in parallel to this operation, an
-external adder can add up the exponents. now the tricky part: to being able to
-add floating point numbers the exponents of the numbers must be equal. to
-achieve that, the difference of the two exponents is calculated and then the
-mantissa of the number with the lower exponent must be shifted by this
-difference (and possibly rounded/truncated). this process is called
-normalizing. then the mantissas can be added. finally the resulting value
-needs to be normalized again.
+In the following the designing details of the failure blocks are presented.
+The functionality of the pipelined architecture has already been described in
+chapter \ref{ch:analysis_parallel}. The figure \ref{fig:pipeline} depicts the
+basic schematics. The same architecture is shown in figure \ref{fig:arch_pipe}
+with a simplified RTL (register transfer level) schematic. The main aspect of
+the chosen design is to use the high performance multiply-accumulate units
+available in modern FPGAs. These so called DSP-slices allow to perform, besides
+other operation, fully pipelined multiply-accumulate operations at frequencies
+of up to 450 MHz. The manual \cite{xilinx_DSP} describes the vast functional
+possibilities of the DSP-slices available in the series 7 FPGAs of
+Xilinx\footnote{http://www.xilinx.com}. As shown in figure \ref{fig:arch_pipe},
+in each pipeline stage the transition probabilities (coming either from memory
+in case of the basic forward algorithm or from a computational unit in the case
+of the extended algorithm) are multiplied with the forward variables (read out
+of the fifo queue) calculated in the previous stage and the results are
+accumulated. This is done until $N$ components are accumulated, then the
+emission probabilities are multiplied to the result and the first component of
+the forward variable vector $\alpha_k$ of this stage is stored into a fifo
+queue of the next pipeline stage. This iteration is repeated $N$ times until
+all $N$ component of the $\alpha$ vector are computed. After each iteration, the
+accumulator must be cleared. It takes three pipeline stages to pipeline the
+multiply- accumulate operation and two stages for the multiply operation. It
+takes $N+3$ cycles to accumulate all multiplication pairs ($\alpha_{k-1, j}
+* tp_{i,j}$) and $2$ cycles to perform the final multiplication. This adds up
+to $N^2+5)$ cycles to compute all components of the vector $\alpha_k$ (the
+setup time needs only to be considered once if a well timed reset of the
+accumulator is performed).
 
-scaling: by using floating points, scaling becomes superfluous because the
-exponent allows to represent very small numbers (not respecting ieee
-representations).
+\begin{figure}
+    \centering
+    \input{./schema/arch_pipe.tex}
+    \caption{Simplified RTL representation of the pipelined forward algorithm}
+    \label{fig:arch_pipe}
+\end{figure}
 
-truncation: after the multiply accumulate operation the resulting mantissa of
-48 bits must be truncated to 25 bits. to achieve better results, a rounding
-operation can be applied.
+With this design, there are several things to note. A first concern focuses on
+the second multiplier of the chain: It is used only once every $N+3$rd cycle
+and computes either nonsense or is idle (if disabled) during the rest of the
+time.  This is a very poor utilization of recourses and can be optimized by
+reusing the first multiplier to do the second multiplication. Doing this
+increases the necessary cycles to a minimum of $N*(N+3)+2$ cycles but cuts the
+necessary multiplication units (DSP-slices) by half. Another point to note
+concerns the fifo queue. The queue is supposed to store the arriving components
+of the vector $\alpha_{k-1}$ and use them to compute the next vector
+$\alpha_k$.  However, each component of the vector $\alpha_{k-1}$ is used $N$
+times, as every component of the new vector $\alpha_k$ depends on every
+component of the previous vector $\alpha_{k-1}$. Therefore it is not possible
+to use only one fifo queue. A solution to this problem is to use two queues,
+one to store the arriving new values needed for the next iteration and one to
+read the values that have been stored last iteration. At the end of the
+computation of all components of the vector $\alpha$, the queues are switched.
+While a queue is in read state, it operates as a circular buffer by storing
+back the value it has just read. Another solution is to use addressable memory
+blocks instead of fifos and use a simple counter to increasingly address the
+required value to read or to store a new vale. While the solution with the
+FIFOs is easier to control, the memory block solution offers another big
+advantage: if a simple model for the state transitions is used (as discussed in
+chapter \ref{ch:analysis_simple}), a lot of components of the transition
+probability matrix will be zero. It doesn't make sense to compute the product
+of zero with a component of the $\alpha$ vector as the result will always be
+zero and won't impact the accumulation. Using an addressable memory block, the
+$\alpha$ vector components corresponding to a zero in the transition
+probability matrix could easily be skipped while with the FIFOs, this would not
+be possible. Choosing an appropriate method to store the sparse matrix in
+memory, the computation of the new address to read the next $\alpha$ vector
+component corresponding to a non zero transition probability can be done very
+fast and with only few recourses (see chapter \ref{ch:design_mem} for more
+information).
 
-fixed point facts:
-before each multiplication, the operands need to be reduced from 48 to 18 resp
-25 bits. this must be done by either truncating/rounding the final value or by
-scaling or by doing both.
+\begin{figure}
+    \centering
+    \input{./schema/arch_step.tex}
+    \caption{RTL implementation of a pipeline stage with dual memory queue and
+        reusage of components}
+    \label{fig:arch_step}
+\end{figure}
 
-scaling: the proposed scaling method is not usable in this implementation
-because of the division operation. instead, a scaling in base of 2 should be
-used (shift): in every clock cycle a new value is added to the previous one.
-the masked result can be compared to a bit stream of zeros. a match directly
-gives the amount of leading zeros (using the number of times the mask has been
-shifted). if there is no match, shift the mask and compare in the next cycle.
-this operation is done with every alpha, while the lowest value of leading
-zeros is kept. using this method, in most cases at the end of adding up all the
-values, the least number of leading zeros of the n alphas will be known. if in
-the worst case after the addition of the last alpha-component there is
-a non-match, the pipeline must be stalled and the right leading zeros number
-must be found by shifting the mask further to the left. to do the masked
-comparison, the pattern comparing unit of the dsp-slice of the fpga can be
-used. the stored values $ \pi $, $ b $ and $ tp $ can be preprocessed and
-scaled, in order to reduce the number of minimal leading zeros to zero. these
-scaling factors will then be used to recompute the real sequence likelihood.
-
-truncation: a simple solution is to chop off the leading zeros (as counted) and
-truncate the value by only using the following 25 bits after the last leading
-zero. a more precise method would be to use rounding.
-
-\cite{smith97, ti04} discuss the choice of fixed point versus floating point
-representation with respect to DSP devices. This is also applicable for FPGAs.
-
+Figure \ref{fig:arch_step} shows the detailed design of one pipeline stage, if
+the multiplication unit (DSP-slice) is reused and if to memory blocks are used,
+alternating one to write new data and one to read data stored from the last
+$\alpha$ vector compuation. The control signal are not labeled here for reasons
+of lisibility and will be explained in detail in chapter \ref{ch:design_ctrl}.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{data storage management}
+\section{Operand Scaling and Precision}
+
+The DSP-Slices used to for multiply and accumulate operations are designed for
+fixed point data representation, hence thy do not support floating point
+operations. This poses no problem if an operand width can be chosen that allows
+to represent the complete spectrum of all possible values an operand can take
+(with respect to a certain precision). The continuous multiplication of
+probabilities, as it is the case with the algorithm at hand, lead to very small
+values very fast, depending on the sequence length $L$. This is the reason why
+a fixed point representation without scaling cannot be used. This can be
+circumvented by using floating point numbers with a very large exponent to
+prevent an underflow. In this case, the DSP-Slices need to be extended in order
+to support floating points. In the following this option is discussed and then
+compared to a fixed point solution with scaling.
+
+In order to multiply two floating point numbers, the mantissas of both numbers
+are multiplied and the exponents are added (the sign can be ignored, as
+probabilities are always positive). For the multiplication of the mantissas the
+DSP-Slices can be used. In parallel to this operation, an external adder can
+add up the exponents. For being able to add floating point numbers (which
+should be done with the accumulator of the DSP-Slice) the exponents of the
+numbers must be equal. To achieve that, the difference of the two exponents is
+calculated and then the mantissa of the number with the lower exponent must be
+shifted by this difference (and possibly rounded/truncated). This process is
+called normalizing. After the normalization, the mantissas can be added and
+finally the resulting value needs to be normalized again.
+
+The work \cite{FPL13_Brosser} presents a solution for a floating point
+operations, including multiplication and addition, in single
+precision\footnote{IEEE 754-2008} using only one DSP-Slice. For being able to
+omit the scaling completely, the exponent would need to be larger: assuming
+that the alphabet contains $M=1000$ elements and using the estimation of
+equation \ref{eq:scaling_estimation}, a sequence length of $L>13$ would already
+exceed the capabilities of single precision data representation. The drawback
+of this solution is the dependency of the exponent on the sequence length $L$
+and the non-standardized representation. The proposed solution would needed to
+be extended by a parametrizable exponent size. Another issue in this work is
+the absence of a optimized and fully pipelined multiply-accumulate operation.
+In order to do multiplication followed by accumulation with the same DSP-Slice,
+one operation must first finish completely before the other can begin. This has
+a huge impact on the latency as well as on throughput: Using the latencies
+presented in the work, 22 cycles are necessary for multiplication and 25 cycles
+for addition. Using memory to store the intermediate results the operations
+could be pipelined, but without additional memory no pipelining is possible.
+A more optimized solution for the algorithm at hand can surely be found but
+a more profound analysis of floating point operations on FPGA must be performed
+to gain more insight. This is however beyond of the scope of this work and the
+present facts are enough to first consider a fixed point solution with scaling
+before heading deeper into floating points.
+
+The documents \cite{smith97, ti04} discuss the choice of fixed point versus
+floating point representation with respect to DSP devices. This is also
+applicable for FPGAs.
+
+\emph{\color{red} use the argumentation of those documents}
+
+The DSP-Slices allow fixed point multiply-accumulate operations with a operands
+of bit width 18 and one of bit width 25. Internally the device works with a bit
+width of 48 bits, which allows a lossless multiplication (43 bits) and an
+accumulation with 5 bits margin for overflow. Due to the properties expressed in
+equations \ref{eq:scaling_sum}, these fife additional bits are not necessary in
+the present case. After the MACC operation, the second multiplication takes
+a gain operands of with 18 bits resp 25 bits as input. Therefore, the result of
+the MACC needs to be truncated. In order to not loose to much information, at
+this step scaling must be introduced.
+
+As already discussed in chapter \ref{ch:analysis_scaling} the scaling method
+proposed by the reference work must be avoided in this implementation due to
+the additional necessary operations. Instead, a scaling in base of 2 can be
+used (this corresponds to a shift): after the computation of a component of the
+initial $\alpha$ vector, a lead zero counter (LZC) unit is introduced. This
+unit is purely combinational and counts the leading zeros of a operand. The
+minimal count of all components in the $\alpha$ vector is then forwarded into
+the next pipeline stage where it is used to to shift the result of the MACC
+operation for LZC positions to the left (this corresponds to a multiplication
+of $2^{LZC}$). Also in this stage (and every following) a LZC unit is added in
+the same way as described above. The LZC results of each stage are forwarded
+and used to shift the results and accumulated. The minimum LZC of all elements
+of the $\alpha$ vector has to be found because all operands of one stage need
+to be scaled by the same value. It must be the minimum value in order to
+prevent a overflow in the shifting operation. It is important to use the same
+value for all operants to being able to accumulate the operands without
+normalization in the next pipeline stage.
+
+Simultaneously to the resulting likelihood, also a scaling factor is provided.
+This scaling factor can then be used in the classification step to normalize
+all the involved likelihood values and decide if a failure is predicted for the
+current event sequence. The scaling method is presented in figure
+\ref{fig:arch_pipe_scale}.
+
+\begin{figure}
+    \centering
+    \input{./schema/arch_pipe_scale.tex}
+    \caption{Simplified RTL representation of the pipelined forward algorithm
+        with scaling using shifters and leading zero counters}
+    \label{fig:arch_pipe_scale}
+\end{figure}
+
+To perform the scaling, also a DSP-Slice can be used by simply multiplying the
+operand with the factor $2^{LZC}$. The whole range of internal 43 bits of the
+MACC operation need to be scaled which can be achieved by two cycles of one
+DSP-Slice. First the lower 18 bits ($op_{low}$) of the 43 internal bits ($op$)
+are introduced into the DSP-Slice and multiplied by the factor $2^{LZC}$.
+A precomputed lookup table is used to select the factor corresponding to
+$2^{LZC}$ using LZC as input. In next cycle, the upper 25 bits ($op_{up}$) of
+$op$ are selected and introduced into the DSP-Slice. $op_{up}$ is shifted by
+a constant amount of 17 bits (this can be done internally by the DSP-Slice) and
+then also multiplied by the factor $2^{LZC}$. The accumulator then adds the two
+shifted operands $op_{low}$ and $op_{up}$ together which results in a shifted
+value of $op$ by LZC bits to the right. All these operation can be done by
+using only one DSP-Slice. Figure \ref{fig:arch_step_scale} shows the necessary
+schematics. Also the simplified representation of the memory queue has been
+replaced in this schematic.
+
+\begin{figure}
+    \centering
+    \input{./schema/arch_step_scale.tex}
+    \caption{RTL implementation of a pipeline stage including scaling}
+    \label{fig:arch_step_scale}
+\end{figure}
+
+To select the minimal LZC value, two registers and a comparator are used. The
+first register stores the new LZC value and the second register holds the output
+LZC value. The output register is only updated with the new value if the new
+value is smaller than the one already stored in the output register.
+
+To further increase the precision, the stored values $\pi$, $B$ and $TP$ can be
+preprocessed and scaled. Also here, the element with the lowest number of
+leading zeros decides the scaling factor.
+
+\emph{\color{red}calculation of quantization error, conclusion that fixed points
+are fine}
+
+%-------------------------------------------------------------------------------
+%===============================================================================
+\section{Memory Architecture and Management}
+\label{ch:design_mem}
 
 \emph{\color{red}the following points need to be explained in more detail}
 
@@ -1380,88 +1570,19 @@ parallel implementation should be used, an internal memory must be built.
         to preload values from ram into registers.
 \end{itemize}
 
-%-------------------------------------------------------------------------------
-%===============================================================================
-\section{initialization}
-
-figure \ref{fig:init_s} shows the necessary operation to compute every i-th
-component of the first forward variable $ \alpha_1 $ in the initialization
-step.  the $ n $ components of $ \alpha_1 $ can be computed one by one when
-only one such structure is implemented in hardware. assuming a fully
-pipelineable multiplier, one component of $ \alpha_1 $ appears in the output
-register at every cycle (with a latency of $ s $ cycles, where $ s $ is the
-number of pipeline stages in the multiplier). to compute all $ n $ components
-of $ \alpha_1 $ with this structure, $ n + s $ cycles are necessary.
-alternatively the complete initialization can be fully parallelized if the
-structure \ref{fig:init_s} is replicated $ n $ times. in this case, all
-$ n $ components of $ \alpha_1 $ appear at the same time, after $ s $ cycles in
-the output registers. if such a heavy parallelization is useful will be
-analyzed after all stages have been described.
-
-\begin{figure}
-    \includegraphics[width=1\columnwidth]{./schema/arch_init_s.png}
-    \caption{initialisation step with one macc}
-    \label{fig:init_s}
-\end{figure}
+\emph{\color{red}how to store sparse matrices (wrt chapter
+\ref{ch:design_arch})}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{k-th forward variable}
-\emph{\color{red}better title?}
-
-\begin{itemize}
-    \item one pipelined macc for the computation of all elements
-    \item $ n $ pipelined macc, each computing one $ \alpha_k $
-    \item use optimized matrix-vector-vector multiplication
-        $ \alpha_{k+1} = tp * \alpha_k * b(o_k) $
-        \cite{FCCM12_Kestur, ITNG07_Yang}
-\end{itemize}
-
-\begin{figure}
-    \includegraphics[width=1\columnwidth]{./schema/arch_step_s.png}
-    \caption{k-th step with one macc unit}
-    \label{fig:step_s}
-\end{figure}
-\begin{figure}
-    \includegraphics[width=1\columnwidth]{./schema/arch_shift_reg_s.png}
-    \caption{example of input shift register with n=2}
-    \label{fig:shift_reg_s}
-\end{figure}
-
-\begin{figure}
-    \includegraphics[width=1\columnwidth]{./schema/arch_step_p.png}
-    \caption{k-th step with $ n+1 $ macc units and integrated computation of p
-        (which is only needed at the last step)}
-    \label{fig:step_p}
-\end{figure}
+\section{Controlling the Pipeline}
+\label{ch:design_ctrl}
 
 \begin{figure}
     \centering
-    \input{./schema/arch_step_s.tex}
-    \caption{Implementation of one step in a pipelined architecture, including
-        scaling}
-    \label{fig:step_s}
-\end{figure}
-
-%-------------------------------------------------------------------------------
-%===============================================================================
-\section{Scaling}
-
-\begin{figure}
-    \centering
-    \input{./schema/scale.tex}
-    \caption{Simple scaling with shifter}
-    \label{fig:scale}
-\end{figure}
-
-%-------------------------------------------------------------------------------
-%===============================================================================
-\section{serial controller}
-
-\begin{figure}
-    \includegraphics[width=1\columnwidth]{./schema/arch_ctrl.png}
-    \caption{controller of serial implementation}
-    \label{fig:ctrl}
+    \input{./schema/arch_sm.tex}
+    \caption{Mealey State Machine to control the pipeline}
+    \label{fig:arch_sm}
 \end{figure}
 
 \emph{\color{red} in table \ref{tab:ctrl} the signals flush\_ps and load\_out
@@ -1559,11 +1680,11 @@ are only set in the first iteration. add a footnote?}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{balancing pipeline stages}
+\section{Balancing the Pipeline Stages}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{practical notes}
+\section{Implementation and Testing}
 
 \begin{itemize}
     \item generic design (change n, l and bit widths in param\_pkg)
@@ -1572,13 +1693,8 @@ are only set in the first iteration. add a footnote?}
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{testing and verification}
-\label{ch:test}
-
-%-------------------------------------------------------------------------------
-%===============================================================================
-\section{device}
-\label{ch:test_dev}
+\chapter{Results}
+\label{ch:results}
 
 \begin{itemize}
     \item nexys4 board with artix-7 fpga
@@ -1588,39 +1704,25 @@ are only set in the first iteration. add a footnote?}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{relation to proposed algorithm}
-\label{ch:test_prop}
+\section{Speedup}
 
 %-------------------------------------------------------------------------------
-\subsection{log standard}
-
-%-------------------------------------------------------------------------------
-\subsection{metrics}
+%===============================================================================
+\section{Accuracy}
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{results}
-\label{ch:res}
-%-------------------------------------------------------------------------------
-\section{speedup}
-\label{ch:res_speed}
-%-------------------------------------------------------------------------------
-\section{accuracy}
-\label{ch:res_prec}
-
-%===============================================================================
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{conclusion}
+\chapter{Conclusion}
 \label{ch:conc}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{achievements}
+\section{Main Contribution}
 \label{ch:conc_ach}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{future work}
+\section{Future Work}
 \label{ch:conc_work}
 
 \nocite{*}
