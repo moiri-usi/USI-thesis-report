@@ -124,11 +124,11 @@ increasingly prone to failures due to decay of material.
 In the event of a system failure it is of course desirable to fix the system as
 soon as possible in order to minimize the downtime of the system (maximize the
 availability). This can be accomplished by using different types of recovery
-techniques, e.g. Check-pointing (create checkpoints to roll back/forward),
-system replication (switch to a redundant system), fail over (reboot). All these
-techniques require a certain amount of time to complete the recovery process,
-time that is very expensive. In order to minimize this time, techniques have
-been developed to anticipate upcoming failures. Such a technique is described in
+techniques, e.g. check-pointing (create checkpoints to roll back/forward), fail
+over (switch to a redundant system), reboot. All these techniques require
+a certain amount of time to complete the recovery process, time that is very
+expensive. In order to minimize this time, techniques have been developed to
+anticipate upcoming failures. Such a technique is described in
 \cite{salfner08}.
 
 The work presents a new algorithm to predict failures and compares the results
@@ -145,6 +145,41 @@ outlined in this document.
 %===============================================================================
 \section{Problem Statement}
 \label{ch:_intro_prob}
+
+The main idea of the prediction model proposed in the reference work
+\cite{salfner08} is to predict failures, based on sequences of events and their
+time of arrival. This is modeled with a HSMM (Hidden Semi-Markov Model). A very
+detailed description can be found in the reference work, but the fundamental
+concept is also described here, in chapter \ref{ch:event}. In order to perform
+a prediction, two parts are required: the training of the model and the
+sequence processing. The training of the model uses collected error event data
+samples and corresponding oracle predictions (collected from known failures) to
+train the features (parameters) of the model in order to be able to detect
+similar sequences as the ones that led to failures in previous cases. The
+training of the model is not time critical and is performed off-line. The
+trained features are then used in the second part, the sequence processing.
+This is now time critical as this happens on-line on a live system. The system
+will continuously send error events to the sequence processing unit, which
+needs to compute a likelihood of the sequence of the last $L$ events. This
+likelihood is sent to a classifier where it is compared to a non-failure
+likelihood. The classifier then predicts if the sequence at hand will lead to
+a failure in the near future.
+
+The failure prediction method, as it was outlined in very few words above and
+discussed in \cite{salfner08}, leads to very good prediction results (F-measure
+of up to 0.66. See chapter \ref{ch:event} for more information). This comes at
+the price of high computational efforts that are necessary to perform the
+sequence processing ($O(LN^2)$). This may lead to the situation that a failure
+is correctly predicted, but the result of the prediction is only available
+after the failure has already happened. This would of course rend the
+prediction useless. The main goal of this thesis, aims to accelerate the
+sequence processing part in order to predict a failure before it really
+happens. To do so, first available parallelism and an appropriate accelerator
+architecture must be found. Then the accelerator must be designed and
+implemented, using the knowledge gained from the analysis and finally the
+implementation must be compared to a serial implementation and a speedup and
+accuracy must be computed.
+
 %-------------------------------------------------------------------------------
 %===============================================================================
 \section{Motivation}
@@ -171,12 +206,10 @@ the work.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Contributions}
-\label{ch:intro_cont}
-%-------------------------------------------------------------------------------
-%===============================================================================
 \section{Structure}
 \label{ch:intro_struct}
+
+
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1371,18 +1404,18 @@ time.  This is a very poor utilization of recourses and can be optimized by
 reusing the first multiplier to do the second multiplication. Doing this
 increases the necessary cycles to a minimum of $N*(N+3)+2$ cycles but cuts the
 necessary multiplication units (DSP-slices) by half. Another point to note
-concerns the fifo queue. The queue is supposed to store the arriving components
+concerns the FIFO queue. The queue is supposed to store the arriving components
 of the vector $\alpha_{k-1}$ and use them to compute the next vector
 $\alpha_k$.  However, each component of the vector $\alpha_{k-1}$ is used $N$
 times, as every component of the new vector $\alpha_k$ depends on every
 component of the previous vector $\alpha_{k-1}$. Therefore it is not possible
-to use only one fifo queue. A solution to this problem is to use two queues,
+to use only one FIFO queue. A solution to this problem is to use two queues,
 one to store the arriving new values needed for the next iteration and one to
 read the values that have been stored last iteration. At the end of the
 computation of all components of the vector $\alpha$, the queues are switched.
 While a queue is in read state, it operates as a circular buffer by storing
 back the value it has just read. Another solution is to use addressable memory
-blocks instead of fifos and use a simple counter to increasingly address the
+blocks instead of FIFOs and use a simple counter to increasingly address the
 required value to read or to store a new vale. While the solution with the
 FIFOs is easier to control, the memory block solution offers another big
 advantage: if a simple model for the state transitions is used (as discussed in
@@ -1409,8 +1442,10 @@ information).
 Figure \ref{fig:arch_step} shows the detailed design of one pipeline stage, if
 the multiplication unit (DSP-slice) is reused and if to memory blocks are used,
 alternating one to write new data and one to read data stored from the last
-$\alpha$ vector compuation. The control signal are not labeled here for reasons
-of lisibility and will be explained in detail in chapter \ref{ch:design_ctrl}.
+$\alpha$ vector computation. The control signal are not labeled here for reasons
+of readability and will be explained in detail in chapter \ref{ch:design_ctrl}.
+
+\emph{\color{red}describe the design of the extension}
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -1552,23 +1587,46 @@ are fine}
 \section{Memory Architecture and Management}
 \label{ch:design_mem}
 
-\emph{\color{red}the following points need to be explained in more detail}
+internal block ram of the FPGA for $\pi$, $TP$ and $B$. In case of the extension,
+instead of $TP$ the cdf parameters are stored.
 
-facts:
-in each kth step $ n^2*tp $ values and $ n*b $ values are necessary. in case of
-the parallel version, each clock cycle $ n*tp $ and one b value must be made
-available. in case of the serial version one tp or b vale must be made
-available. by reading directly from the ram, 16 bits can be read with a bus
-frequency of 104mhz. running the pipeline at 52mhz, the necessary data can be
-provided at each clock cycle in case of the serial implementation. if the
-parallel implementation should be used, an internal memory must be built.
+$\pi$ and $TP$/cdf parameter values can be stored once and for all (they never
+change)
 
-\begin{itemize}
-    \item real-time (time constraints on every ps) vs on-line (use buffer to
-        optimize throughput)
-    \item memory hierarchy: at startup copy from flash to ram, then use pipeline
-        to preload values from ram into registers.
-\end{itemize}
+$B$ changes depending on the arriving event. There are usually to much different
+events ($M=1000$) to store all inside the FPGA. A two staged pipeline is
+necessary to keep the throughput at a maximum level. In case of the extension
+this top level pipeline already exist. In the first stage of the pipeline,
+a memory controller reads from an external memory the $B$ values corresponding
+to the actual event and stores them into the internal buffer. This buffer is of
+the type FIFO. This needs to be done for every active prediction model (cf.
+figure \ref{fig:arch_top})
+
+The events do not arrive in a regular interval. They may arrive very fast one
+after each other and there my be time intervals where no event arrives. No hard
+real time constraints for the prediction system exist: There is no impact on
+the prediction quality, if the latency from the time an event arrives until the
+likelihood is computed differs depending on the load of the system. This can be
+used to even out the event stream by introducing a FIFO queue where the events
+are stored until the system is able to compute the corresponding likelihood.
+This buffer needs to be designed in order to be able to collect events when the
+accelerator is used to full capacity and events are arriving faster than the
+accelerator can handle. Ideally, the buffer should never be empty and never
+full. A buffer that is always empty, indicates that the performance of the
+accelerator is is to high. The frequency of the accelerator can be lowered in
+order to save more energy. If the buffer gets filled up, it becomes
+problematic, because new events cannot be stored and are lost. If the average
+frequency of the arriving events is lower than the maximal throughput the
+buffer is designed to small.  If the frequency is higher, the performance of
+the accelerator is insufficient.
+
+As already mentioned in chapter \ref{ch:design_arch}, intermediate vectors 
+$\alpha_k$ need to be stored in memory, as each value is used multiple times to
+compute the next vector $\alpha_{k+1}$. FPGAs provide internal memory blocks
+that can be accessed in one clock cycle. These memory blocks limit the maximal
+possible values of $N$ and $L$ to be implemented on one FPGA. $L$ is also
+limited by the available MACC units. Table \ref{tab:summary_D} shows the
+necessary memory in function of $N$ and $L$.
 
 \emph{\color{red}how to store sparse matrices (wrt chapter
 \ref{ch:design_arch})}
