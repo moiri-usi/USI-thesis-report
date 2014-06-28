@@ -184,32 +184,62 @@ accuracy must be computed.
 %===============================================================================
 \section{Motivation}
 \label{ch:intro_mot}
-The email of Felix left some doubts to whether the acceleration of the
-algorithm is useful. The following list will give some arguments to justify
-the work.
-\begin{description}
-    \item[Too many parameters to be identified, estimated and set] \hfill \\
-        Considering an embedded system, this is usually not a problem because
-        the parameters are defined during the design phase and will never be
-        changed afterwards.
-    \item[Limited performance scalability] \hfill \\
-        There are studies available claiming otherwise. The discussion of
-        Neumanns work will provide some arguments against this statement.
-    \item[Industry trends point towards cloud] \hfill \\
-        In embedded systems it will still be beneficial to predict failures of
-        single nodes. It is however important to keep the power and
-        computational footprint low. This will be one of the major challenges.
-        On the other hand, I think it would also be possible to also use this
-        algorithm to monitor a distributed system and predict failures. It is
-        only a matter of getting defining the events to feed to the algorithm.
-\end{description}
+
+As already outlined before, it becomes increasingly important to provide
+dependable infrastructure for information systems. Failure prediction is a very
+hot research topic with a main focus on server infrastructure. With the recent
+trend of moving everything to the cloud, one may question the usefulness of
+failure prediction of single nodes. Rather than focusing on single machines it
+may prove beneficial to focus on the interaction of nodes and predict failures
+on a bigger scale. Why then designing a accelerator for a prediction model that
+targets single server systems?
+
+Despite the trend of moving to the clod, there are still thousands of single
+node systems that have a huge impact on a vast amount of people and failures
+would prove to be catastrophic. The talk is about embedded systems. Embedded
+systems are everywhere and the number is increasing. While server farms are
+growing, there also the trend of specializing information systems. With the
+advances of computer hardware, performance is available with less space and
+energy requirements and hence machines are getting more intelligent with the
+increasing trend to embed powerful systems. Transportation (trains, planes
+cars) is a prime example of dependable embedded systems. Huge efforts have been
+made to make fully autonomous transportation systems failure prone (e.g. bullet
+train in Japan) by adding redundant recourses. Accurate failure prediction
+systems may be a key to reduce these recourses or to increase the
+dependability.
+
+Another issue with the proposed failure prediction method is the high amount of
+parameters that need to be identified, estimated and set. Even if this initial
+work is done, the process must be repeated after some time interval, due to the
+fact that properties of server system change during their lifetime. This is
+usually not the case for embedded systems. Once an embedded system is designed
+and installed, software changes are a lot less common (neglecting the consumer
+market which is not the main target here), hence the system parameters do not
+change often or not at all. It is therefore sufficient to do the parameter
+configuration only once during design time. Another aspect is the specific
+application domain of embedded systems. They are designed for very specific
+functions and offer a better insight in process properties than this is the
+case with complex software architectures on server systems. A parametrization
+of the failure prediction system for an embedded system, will in general prove
+to be easier than for server systems.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
 \section{Structure}
 \label{ch:intro_struct}
 
-
+This section gives an overview of the structure of the thesis. Chapter
+\ref{ch:art} presents existing work, done in the aria of failure prediction and
+acceleration of related algorithms. Chapter \ref{ch:event} provides a short
+summary of the prediction model to be accelerated and presents the results
+obtained by using the prediction model in a real case scenario. This is
+discussed in detail in the reference work \cite{salfner08}. Chapter
+\ref{ch:analysis} focuses on the sequence prediction algorithm and provides an
+analysis of available parallelism. In chapter \ref{ch:design} a design of an
+accelerator is proposed and in chapter \ref{ch:results} results in terms of
+speedup and accuracy are presented.  Chapter \ref{ch:conc} concludes the work
+by presenting the contributions and outlines possible future work related to
+the acceleration.
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
