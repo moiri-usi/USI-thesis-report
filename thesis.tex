@@ -1589,21 +1589,21 @@ forward variables. As both stages need to use the same amount of cycles to
 complete, the computation of transition probabilities is limited to $N*(N+3)+2$
 cycles. This is the amount of cycles available to compute $N^2$ transition
 probabilities if the throughput of the system should stay the same. Introducing
-this pipeline doubles the latency. Figure \ref{fig:arch_ext} show the \gls{rtl}
-implementation of the transition probabilities. It takes as input the \gls{cdf}
-values and performs the correction of the diagonal (es expressed in equation
-\ref{eq:V}). While the \gls{cdf} values are stored directly into an internal
-memory block, the elements are accumulated. After $N$ cycles, the diagonal
-value corresponding to the row that was just accumulated ($v_{i, sum}
-= \sum\limits_{\substack{h=1 \\ h \neq i}}^{N} v_{ih}$), is subtracted and
-a bitwise inverse is performed to compute $1 - v_{i, sum}$. In order to not
-interrupt the pipeline flow when a corrected diagonal value must be written,
-a dual-port memory is needed. Note, that the values need to be written
-column-wise (to use a pipelined accumulator) but to calculate the $\alpha$
-vector, they need to be read row-wise. To prevent interference, two memory
-blocks are necessary that act alternating as target for storing values and as
-reading memory (similar to the $\alpha$ memory queues described in the previous
-section).
+this pipeline doubles the latency. Figure \ref{fig:arch_ext} shows the
+\gls{rtl} implementation of the transition probabilities. It takes as input the
+\gls{cdf} values and performs the correction of the diagonal of the $V$ matrix
+(as expressed in equation \ref{eq:V}). While the \gls{cdf} values are stored
+directly into an internal memory block, the elements are accumulated. After $N$
+cycles, the diagonal value corresponding to the row that was just accumulated
+($v_{i, sum} = \sum\limits_{\substack{h=1 \\ h \neq i}}^{N} v_{ih}$), is
+subtracted and a bitwise inverse is performed to compute $1 - v_{i, sum}$. In
+order to not interrupt the pipeline flow when a corrected diagonal value must
+be written, a dual-port memory is needed. Note, that the values need to be
+written column-wise (to use a pipelined accumulator) but to calculate the
+$\alpha$ vector, they need to be read row-wise. To prevent interference, two
+memory blocks are necessary that act alternating as target for storing values
+and as reading memory (similar to the $\alpha$ memory queues described in the
+previous section).
 
 \begin{figure}
     \centering
@@ -1614,20 +1614,21 @@ section).
 \end{figure}
 
 Figure \ref{fig:arch_cdf1} shows the design of the exponential \gls{cdf} (cf.
-equation \ref{eq:cdf_exp}), and \ref{fig:arch_cdf2} shows the Laplace \gls{rtl}
-(cf. equation \ref{eq:cdf_laplace}). Due to the very complex computation of the
-Gaussian \gls{cdf} (cf. equation \ref{eq:cdf_gauss}) the design of this
-\gls{cdf} was omitted. All \glspl{cdf} need the exponential function. In
-addition, needs the Laplace \gls{cdf} a division operation, an adder and
-a comparator. The shift operation is constant and can implemented with fixed
-wiring. The exponential \gls{cdf} only needs a multiplier and a comparator. Of
-the required components poses the exponential function the biggest problem.
-Fortunately implementation solutions of exponential functions for \glspl{fpga}
-have been proposed (\cite{RSSI08_Pottathuparambil, ICFPT05_Detrey}). These
-solutions are however designs for floating point numbers. Therefore also the
-division, multiplication, comparison and addition operations must be done in
-floating points. Of course it is way out of scope of this thesis to design
-and/or implement these elements.  There is however the Xilinx CORE Generator
+equation \ref{eq:cdf_exp}), and \ref{fig:arch_cdf2} shows the design of the
+Laplace \gls{cdf} (cf. equation \ref{eq:cdf_laplace}). Due to the very complex
+computation of the Gaussian \gls{cdf} (cf. equation \ref{eq:cdf_gauss}) the
+design of this \gls{cdf} was omitted. All \glspl{cdf} need the exponential
+function. In addition, the Laplace \gls{cdf} needs a division operation, an
+adder and a comparator. The shift operation is constant and can be achieved
+with fixed wiring. The exponential \gls{cdf} only needs a multiplier and
+a comparator. Of the required components, the exponential function poses the
+biggest problem. Fortunately implementation solutions of exponential functions
+for \glspl{fpga} have been proposed (\cite{RSSI08_Pottathuparambil,
+ICFPT05_Detrey}). These solutions are however designs for floating point
+numbers. Therefore also the division, multiplication, comparison and addition
+operations must be done in floating points. Of course it is way out of the
+scope of this thesis to design and/or implement these elements. There is
+however the Xilinx CORE Generator
 tool\footnote{http://www.xilinx.com/tools/coregen.htm} that allows to build
 a vast amount of functional blocks, including floating point operations.
 Unfortunately there is no support for exponential functions which is the reason
@@ -1649,6 +1650,20 @@ of this thesis.
         computation}
     \label{fig:arch_cdf2}
 \end{figure}
+
+The design of both \glspl{cdf} as well as the diagonal correction of the $V$
+matrix is fully pipelined. It takes $N^2+C$ cycles to compute the correct $V$
+matrix, where $C$ is the pipeline length. The number of cycles needed for the
+forward variable computation are $N*(N+3)+2$. For $C \leq 3N+2$, the throughput
+of the system is not affected. As the Xilinx CORE Generator allows to configure
+the latency of each block (lower latency means more resources), the design can
+be optimized for a specific $N$.
+
+This design proposal of the extension is by far not as optimized as the design
+proposed for the forward variable computation. A pure fixed point design
+would allow to reduce the recourses usage. This would allow to propose
+a reasonable design for the Gaussian \gls{cdf} (a \gls{cdf} which is very
+often used).
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -1791,20 +1806,37 @@ are fine}
 \section{Memory Architecture and Management}
 \label{ch:design_mem}
 
-internal block ram of the \gls{fpga} for $\pi$, $TP$ and $B$. In case of the
-extension, instead of $TP$ the \gls{cdf} parameters are stored.
-
-$\pi$ and $TP$/\gls{cdf} parameter values can be stored once and for all (they
-never change)
+A huge advantage of \glspl{fpga} is the flexibility in terms of memory
+architecture. In \glspl{gpp} usually a memory hierarchy is used (from fast and
+small to slow and big): registers, 1st, 2nd (sometimes 3rd) level cache, then
+\gls{ram}, a hard drive and finally the cloud. Usually it is assumed that the
+difference in access time between two consecutive levels is one order of
+magnitude. Such a hierarchy is very efficient if no knowledge about the data
+flow is available (which is usually the case for \glspl{gpp}). Sizes of fast
+caches are quite small and are only useful if data is frequently reused. In the
+present case however such a memory hierarchy would be very bad because of the
+high velocity of data. The algorithm at hand always requires the complete
+matrix $TP$ which is of size $N^2$ to compute the next forward variable. The
+same is true for the vectors $\pi$ and $B(o_k)$. In case of a memory hierarchy
+this implies, that either the cache is big enough, or there will always be
+cache misses. In such chases it is much more beneficial to build a scratch pad
+memory architecture: In this type of architecture, the hierarchy is very flat
+and one aims to design blocks of memory of appropriate size to store the
+necessary data. In \glspl{fpga} such block ram is internally available. This
+has been used to store teh values of $\pi$, $TP$ and $B$. In case of the
+extension, instead of $TP$ the \gls{cdf} parameters are stored. The $\pi$ and
+$TP$/\gls{cdf} parameter values can be stored once and for all (they never
+change).
 
 $B$ changes depending on the arriving event. There are usually to much
-different events ($M=1000$) to store all inside the \gls{fpga}. A two staged
-pipeline is necessary to keep the throughput at a maximum level. In case of the
-extension this top level pipeline already exist. In the first stage of the
-pipeline, a memory controller reads from an external memory the $B$ values
-corresponding to the actual event and stores them into the internal buffer.
-This buffer is of the type \gls{fifo}. This needs to be done for every active
-prediction model (cf.  figure \ref{fig:arch_top})
+different events ($M=1000$) to store all the complete matrix $B$ inside the
+\gls{fpga}. A two staged pipeline is necessary to keep the throughput at
+a maximum level. In case of the extension this top level pipeline already
+exist. In the first stage of the pipeline, a memory controller reads from an
+external memory the $B$ values corresponding to the actual event and stores
+them into the internal buffer. This buffer is of the type \gls{fifo}. This
+needs to be done for every active prediction model (cf.  figure
+\ref{fig:arch_top})
 
 The events do not arrive in a regular interval. They may arrive very fast one
 after each other and there my be time intervals where no event arrives. No hard
@@ -1813,7 +1845,7 @@ the prediction quality, if the latency from the time an event arrives until the
 likelihood is computed differs depending on the load of the system. This can be
 used to even out the event stream by introducing a \gls{fifo} queue where the
 events are stored until the system is able to compute the corresponding
-likelihood.  This buffer needs to be designed in order to be able to collect
+likelihood. This buffer needs to be designed in order to be able to collect
 events when the accelerator is used to full capacity and events are arriving
 faster than the accelerator can handle. Ideally, the buffer should never be
 empty and never full. A buffer that is always empty, indicates that the
@@ -1849,8 +1881,8 @@ shows the necessary memory in function of $N$ and $L$.
     \label{fig:arch_sm}
 \end{figure}
 
-\emph{\color{red} in table \ref{tab:ctrl} the signals flush\_ps and load\_out
-are only set in the first iteration. add a footnote?}
+%\emph{\color{red} in table \ref{tab:ctrl} the signals flush\_ps and load\_out
+%are only set in the first iteration. add a footnote?}
 
 %\begin{table}
 %    \begin{center}
@@ -1997,6 +2029,27 @@ generated again if parameters in the configuration package are changed.
 %===============================================================================
 \section{Main Contribution}
 \label{ch:conc_ach}
+
+This thesis proposes a novel design of the basic forward algorithm on
+\gls{fpga}, by using a fixed point representation and a custom operand scaling
+scheme. The pipelined architecture allows to reduce memory access by a factor
+of $L$. As the design targets embedded systems, the main focus was to reduce
+the resource footprint as much as possible while keeping throughput and latency
+at an acceptable level.
+
+The thesis further proposes a design solution for a failure prediction model,
+described in \cite{salfner08}. This includes the design of an extension to the
+forward algorithm, a classifier and a memory management. The extension is
+designed by adding a computation unit to calculate a new transition
+probability matrix for every arriving observation symbol (the delay of one
+symbol with respect to another is taken into account). The proposed design
+of the predictor allows to implement a system capable of predicting one failure
+type on a \gls{fpga} board, by using custom peripherals (\gls{ram}, Flash,
+communication interface).
+
+On a conceptional point of view, the thesis provides argumentation on why
+in world full of cloud server systems a failure prediction system for a single
+node can still be beneficial.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
