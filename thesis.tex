@@ -98,15 +98,15 @@ In today's live it becomes increasingly important, that computer systems are
 dependable. The reason being, that computer systems are used more and more in
 areas where the failure of such a system can lead to catastrophic events.
 Banking, public transportation and medical engineering are only a few examples
-of areas employing large and extremely complex systems. The increasing
+of areas, employing large and extremely complex systems. The increasing
 complexity of computer systems has a direct impact on their maintainability and
-testability. It is simply impossible to guarantee that a piece of \gls{sw} comes
-without any faults. On top of that, the same problematic arises with the
-\gls{hw} components which also may contain faulty parts but also get
-increasingly prone to failures due to decay of material.
+testability. It is simply impossible to guarantee that a piece of \gls{sw}
+comes without any faults. On top of that, the same problematic arises with the
+\gls{hw} components which also may contain faulty parts and get increasingly
+prone to failures due to decay of material.
 
 In the event of a system failure it is of course desirable to fix the system as
-soon as possible in order to minimize the downtime of the system (maximize the
+soon as possible, in order to minimize the downtime of the system (maximize the
 availability). This can be accomplished by using different types of recovery
 techniques, e.g. check-pointing (create checkpoints to roll back/forward), fail
 over (switch to a redundant system), reboot. All these techniques require
@@ -120,10 +120,10 @@ compares the results with other techniques. The accuracy of the presented
 algorithm to predict failures proves to be better compared to the other
 techniques, has however the drawback of increased complexity and hence
 increased computation time. It is very important to keep the computation
-overhead very low in order to maximize the time between the prediction of
-a failure and the actual event of the failure. One way to decrease the
-computation time is to design a \gls{hw} accelerator for the prediction
-algorithm. The design of such an accelerator is outlined in this document.
+overhead low in order to maximize the time between the prediction of a failure
+and the actual event of the failure. One way to decrease the computation time
+is to design a \gls{hw} accelerator for the prediction algorithm. The design of
+such an accelerator is outlined in this document.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -131,21 +131,21 @@ algorithm. The design of such an accelerator is outlined in this document.
 \label{ch:_intro_prob}
 
 The main idea of the prediction model proposed in the reference work
-\cite{salfner08} is to predict failures, based on sequences of events and their
-time of arrival. This is modeled with a \gls{hsmm}. A very detailed description
-can be found in the reference work, but the fundamental concept is also
-described here, in chapter \ref{ch:event}. In order to perform a prediction,
-three parts are required: the training of the model, the sequence processing
-and the classification. The training of the model uses collected error event
-data samples and corresponding oracle predictions (collected from known
-failures) to train the features (parameters) of the model in order to be able
-to detect similar sequences as the ones that led to failures in previous cases.
-The training of the model is not time critical and is performed off-line. The
-trained features are then used in the second part, the sequence processing.
-This is now time critical as this happens on-line on a live system. The system
-will continuously send error events to the sequence processing unit, which
-needs to compute a likelihood of the sequence of the last $L$ events. This
-likelihood is sent to a classifier where it is compared to a non-failure
+\cite{salfner08}, is to predict failures, based on sequences of events and
+their time of arrival. This is modeled with a \gls{hsmm}. A detailed
+description can be found in the reference work, but the fundamental concept is
+also described in this thesis (chapter \ref{ch:event}). In order to perform
+a prediction, three parts are required: the training of the model, the sequence
+processing and the classification. The training of the model uses collected
+error event data samples and corresponding oracle predictions (collected from
+known failures) to train the features (parameters) of the model in order to be
+able to detect similar sequences as the ones that led to failures in previous
+cases. The training of the model is not time critical and is performed
+off-line. The trained features are then used in the second part, the sequence
+processing. This is time critical as it happens on-line on a live system. The
+system will continuously send error events to the sequence processing unit,
+which needs to compute a likelihood of the sequence of the last $L$ events.
+This likelihood is sent to a classifier where it is compared to a non-failure
 likelihood. The classifier then predicts if the sequence at hand will lead to
 a failure in the near future.
 
@@ -160,8 +160,8 @@ main goal of this thesis, aims to accelerate the sequence processing part in
 order to predict a failure before it really happens. To do so, first available
 parallelism and an appropriate accelerator architecture must be found. Then the
 accelerator must be designed and implemented, using the knowledge gained from
-the analysis and finally the implementation must be compared to a serial
-implementation and a speedup and accuracy must be computed.
+the analysis. Finally the acceleration design must be compared to a serial
+implementation and the speedup and accuracy must be computed.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -173,9 +173,9 @@ dependable infrastructure for information systems. Failure prediction is a very
 hot research topic with a main focus on server infrastructure. With the recent
 trend of moving everything to the cloud, one may question the usefulness of
 failure prediction of single nodes. Rather than focusing on single machines it
-may prove beneficial to focus on the interaction of nodes and predict failures
-on a bigger scale. Why then designing a accelerator for a prediction model that
-targets single server systems?
+may prove beneficial to only consider on the interaction of nodes and predict
+failures on a bigger scale. Why then designing a accelerator for a prediction
+model that targets single server systems?
 
 Despite the trend of moving to the cloud, there are still thousands of single
 node systems that have a huge impact on a vast amount of people and failures
@@ -225,9 +225,9 @@ discussed in detail in the reference work \cite{salfner08}. Chapter
 \ref{ch:analysis} focuses on the sequence prediction algorithm and provides an
 analysis of available parallelism. In chapter \ref{ch:design} a design of an
 accelerator is proposed and in chapter \ref{ch:results} results in terms of
-speedup and accuracy are presented.  Chapter \ref{ch:conc} concludes the work
+speedup and accuracy are presented. Chapter \ref{ch:conc} concludes the work
 by presenting the contributions and outlines possible future work related to
-the acceleration.
+the thesis.
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -248,7 +248,7 @@ A very detailed overview of failure prediction methods is given in
 \cite{ACM10_Salfner}. The survey discusses i.a. the techniques used as
 comparison in the main reference
 \cite{lin88,IEEE90_lin,ICDM02_Vilalta,domeniconi02} as well as the technique
-described in the main reference \cite{salfner08}.
+described in the main reference \cite{salfner08} itself.
 
 More recent work uses \gls{hw} counters of a general purpose \gls{cpu} and
 combines them with \gls{sw} instrumentation to analyze failures of single
@@ -263,7 +263,7 @@ analyze and predict failures of a distributed system
 \section{Accelerator}
 \label{ch:art_acc}
 
-The main goal of this master thesis is to accelerate an adaptation of the
+The main goal of this master thesis is to accelerate an extension of the
 forward algorithm. Proposals for a \gls{gpu} based accelerator for the classic
 forward algorithm are described in \cite{neumann11,liu09}. Further, several
 proposals to accelerate the Viterbi algorithm (which is closely related to the
@@ -280,7 +280,7 @@ proposes an \gls{fpga} implementation of a parallel floating point accumulation
 and \cite{ITNG07_Yang} describes the implementation of a vector processor on
 \gls{fpga}.
 
-Quite some research has been done on the question what type of technology
+Quite some research has been done on the question of what type of technology
 should be used to accelerate certain algorithms: \cite{SASP08_Che} presents
 a performance study of different applications accelerated on a multicore
 \gls{cpu}, on a \gls{gpu} and on a \gls{fpga}, \cite{FPL10_Jones} discusses the
@@ -306,19 +306,15 @@ This section provides a brief overview of the computational steps done by the
 proposed algorithm described in the reference work \cite{salfner08}.
 
 To be able to understand the formal expression of the algorithm, first
-a definition of the used parameters is provided.
+a definition of the fixed parameters is provided.
 \begin{itemize}
     \item N: number of states of the \gls{hsmm}
     \item M: number of observation symbols (size of the alphabet)
     \item L: observation sequence length
-    \item R: number of \gls{cdf} (kernels)
+    \item R: number of \glspl{cdf} (kernels)
 \end{itemize}
-The delay of the event at time $ t_k $ with respect to the event at time
-$ t_{k-1} $ is described as
-\begin{equation}
-\label{eq:delay}
-    d_k = t_k-t_{k-1}
-\end{equation}
+These are fixed parameters, because they need to be set at design time,
+considering the properties of the system emitting error events.
 
 The proposed failure prediction method aims to find sequences of error events
 that led to failures in the system on previous occasions. Additional to
@@ -328,7 +324,13 @@ into account (or more precise, the delay as defined in equation
 to be preprocessed or brought in to a form understandable for the predictor.
 The error events must build a set of distinct symbols, denoted as $A=\{o_1,
 \dots, o_M\}$. This set is also called alphabet of size $M$. Details on
-preprocessing the events can be found in section \ref{ch:event_data}.
+preprocessing the events can be found in section \ref{ch:event_data}. The
+delay of the event at time $ t_k $ with respect to the event at time $ t_{k-1}
+$ is described as
+\begin{equation}
+\label{eq:delay}
+    d_k = t_k-t_{k-1}
+\end{equation}
 
 To detect specific sequences of events by also taking the time of arrival into
 account, an extension of the \gls{hmm} is proposed. The resulting model is
@@ -384,13 +386,15 @@ a form that is readable by the accelerator.
 
 The model training is based on an extension of the Baum-Welch Algorithm. This
 part will not be accelerated due to its non-criticality with respect to time.
-For this reason only a very brief description of the algorithm is presented.
-For a much more detailed explanation and proof, refer to \cite{salfner08}.
-The training is used to estimate the parameters for each \gls{hsmm}. Using
-the term of machine learning, these parameters are called features.
+For this reason only a very brief, non-formal description of the algorithm is
+presented. For a much more detailed explanation and proof, refer to
+\cite{salfner08}. The training is used to estimate the parameters for each
+\gls{hsmm}. Using the term of machine learning, these parameters are called
+features.
 
-The features to be trained are used by the extended forward algorithm, which is
-used to calculate a sequence likelihood of a \gls{hsmm}. This is described in
+The features to be trained are used by the extended forward algorithm, an
+algorithm that allows to compute a sequence likelihood, for each sequence of
+observation symbols (error events). The forward algorithm is described in
 the next section. Following the features:
 \begin{itemize}
     \item $ \pi_i $, forming the initial state probability vector
@@ -410,7 +414,8 @@ algorithm), the features can be estimated in order to allow the \gls{hsmm} to
 produce a value that describes the likelihood of a specific event sequence to
 produce a failure of a specific type. Due to the proposed extension of also
 taking the delay of an event into account, the Baum-Welch algorithm was
-extended with a gradient descent approach to estimate the kernel parameters.
+extended with a gradient descent approach to estimate the kernel parameters of
+the chosen \glspl{cdf}.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -436,7 +441,8 @@ formally defined as follows:
     \alpha_k(j) = \sum_{i=1}^{N} \alpha_{k-1}(i) v_{ij}(d_k) b_{s_j}(O_k);
     \quad 1 \leq k \leq L
 \end{equation}
-where
+where $v_{ij}(d_k)$ is called the transition probability, forming the matrix
+$V$ of size $N \times N$, defined as:
 \begin{equation}
     \label{eq:V}
     v_{ij}(d_k) = \left\{
@@ -452,8 +458,11 @@ with
     \label{eq:D}
     d_{ij}(d_k) = \sum_{r=1}^{R} \omega_{ij,r}\kappa_{ij,r}(d_k|\theta_{ij, r})
 \end{equation}
-forming the matrix of cumulative transition duration distribution functions
-$ D(d_k) $ of size $ N \times N \times L $.
+$d_{ij}(d_k)$ is forming the matrix of cumulative transition duration
+distribution functions $D(d_k)$ of size $ N\times N$. While the kernel
+parameters are fixed (with the training of the model), the delay of the event
+is not. This implies, that for each event, a new transition probability matrix
+must be computed.
 
 For simplification reasons, only one kernel is used. Due to this, the kernel
 weights can be ignored. Equation \ref{eq:D} can then be simplified to:
@@ -462,8 +471,9 @@ weights can be ignored. Equation \ref{eq:D} can then be simplified to:
     d_{ij}(d_k) = \kappa_{ij}(d_k | \theta_{ij})
 \end{equation}
 
-Choosing the Gaussian \gls{cdf} results in the kernel parameters
-$ \mu_{ij} $ and $ \sigma_{ij} $.
+The kernel parameters are dependant of the choice of \glspl{cdf} (a choice that
+is done at design time). E.g. the Gaussian \gls{cdf} results in the kernel
+parameters $\mu_{ij}$ and $\sigma_{ij}$.
 
 Comparing the extended forward algorithm to the basic version, the only
 difference is the transition probability matrix. While the extension has
@@ -482,9 +492,9 @@ basic equation can be expressed as
 
 Throughout the document, one transition probability of the basic forward
 algorithm will always be denoted as $a_{ij}$ and the matrix as $A$, while for
-the extension the notation $v_{ij}$ and for the matrix $V$ will be used. If
-both versions are addressed at the same time, the notation $tp_{ij}$ for one
-element will be used and $TP$ for the matrix.
+the extension the notation $v_{ij}$ for the probability $V$ and for the matrix
+will be used. If both versions are addressed at the same time, the notation
+$q_{ij}$ for one element will be used and $Q$ for the matrix.
 
 The last set of forward variables $ \alpha_L $ are then summed up to compute
 a probabilistic measure for the similarity of the observed sequence compared to
@@ -513,7 +523,8 @@ the sequence log-likelihood must be computed:
     \label{eq:Plog}
     \log(P(\boldsymbol{o}|\lambda)) = -\sum\limits_{k=1}^{L} \log c_k
 \end{equation}
-where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $.
+where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $, defining the set of
+parameters.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -534,14 +545,15 @@ likelihood of the non-failure model:
         \log P(\boldsymbol{s}|\lambda_i)
     \big ] - \log P(\boldsymbol{s}|\lambda_0) > \log \theta
 \end{equation}
-with
+with $\boldsymbol{s}$ denoting the sequence, $\lambda_i$ representing the
+parameter set of the failure models, $\lambda_0$ the parameter set of the
+non-failure model and
 \begin{equation}
     \label{eq:class_thresh}
     \theta = \frac{(r_{\bar{F}F} - r_{\bar{F}\bar{F}})P(c_{\bar{F}})}
         {(r_{F \bar{F}} - r_{FF})P(c_{F})}
 \end{equation}
-
-To calculate $ \theta $, the following parameters need to be set:
+To calculate $\theta$, the following parameters need to be set:
 \begin{itemize}
     \item $ P(c_{\bar{F}}) $: prior of non-failure class
     \item $ P(c_F) $: prior of failure class
@@ -550,25 +562,84 @@ To calculate $ \theta $, the following parameters need to be set:
     \item $ r_{\bar{F}F} $: false positive prediction
     \item $ r_{F\bar{F}} $: false negative prediction
 \end{itemize}
-
 If equation \ref{eq:class} is true, it is predicted, that a failure will occur.
+
 If no scaling is used, the dual-class classification problem can be formulated
 as follows:
 \begin{equation}
     \label{eq:class_ns}
     \frac{P(s|\lambda_F)}{P(s|\lambda_{\bar{F}})} > \theta
 \end{equation}
-
+with $\boldsymbol{s}$ denoting the sequence, $\lambda_F$ representing the
+parameter set of the failure model and $\lambda_{\bar{F}}$ the parameter set of
+the non-failure model. $\theta$ is defined with equation \ref{eq:class_thresh}.
 Also here, if equation \ref{eq:class_ns} is true, a failure is predicted.
 
-\emph{\color{red}Multi-class classification without scaling?}
+For multi-class classification the following rule can be used:
+\begin{equation}
+    \sum_t r_{tF_a} P(\boldsymbol{s}|c_t) P(c_t)
+    > \sum_t r_{t\bar{F}} P(\boldsymbol{s}|c_t) P(c_t)
+\end{equation}
+Each element $r_{tF_a}$ of the risk matrix defines the cost / risk of
+associating a pattern $\boldsymbol{s}$ with the class $c_{F_a}$ where it really
+belongs to class $c_t$. $c_t$ denotes a failure or the non-failure class,
+$c_{F_a}$ a failure class and $c_{\bar{F}}$ the non-failure class.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
 \section{Metrics}
 \label{ch:event_metrics}
 
-\emph{\color{red}cite results from Felix}
+The failure prediction algorithm as briefly described in this chapter as been
+verified on real case data. The results in figure \ref{fig:results_salfner} are
+cited from \cite{salfner08} and show the precision, recall, F-measure and false
+positive rate metrics of the following failure prediction algorithms:
+\begin{description}
+    \item[periodic] This is a failure prediction method that is used to estimate
+        a lower bound and is derive directly from reliability theory.
+    \item[\acrshort{dft}] The \acrfull{dft} is described in \cite{lin88}. It is
+        based on the notion, that errors occur more frequently before failures
+        occur. It is a error-frequency based approach.
+    \item[Eventset] The idea of this method is to find
+        a good set of error events in order to capture as many failure as
+        possible. Training is used. The method is described in
+        \cite{ICDM02_Vilalta}. It is a data-mining approach.
+    \item[\acrshort{svd}-\acrshort{svm}] \acrfull{svd} is used to reduce the
+        number of dimensions in bag of words error sequence representation.
+        This method follows a classification approach. \glspl{svm} are used
+        as classification technique. It is described in \cite{domeniconi02}.
+    \item[HSMM] This is the proposed algorithm of the reference work
+        \cite{salfner08} where is is described in detail. It is the method for
+        which an accelerator is designed in this thesis.
+\end{description}
+Precision $p$, recall $r$, F-measure $F_\alpha$ and false positive rate $fpr$
+are defined as
+\begin{equation}
+    \text{Precision} \;\;\; p = \frac{\text{true positives}}{\text{true positives}
+        +\text{false positives}}
+        = \frac{\text{correct warnings}}{\text{failure warnings}}
+\end{equation}
+\begin{equation}
+    \text{Recall} \;\;\; r = \frac{\text{true positives}}{\text{true positives}
+        +\text{false negatives}}
+        = \frac{\text{correct warnings}}{\text{failures}}
+\end{equation}
+\begin{equation}
+    \text{F-measure} \;\;\; F_{\alpha} = \frac{p \cdot r}{(1-\alpha)p + \alpha r}
+\end{equation}
+where $\alpha$ is used to weight the precision.
+\begin{equation}
+    \text{false positive rate} \;\;\; fpr
+        = \frac{\text{false positives}}{\text{false positives}
+            +\text{true negatives}}
+        = \frac{\text{false warnings}}{\text{non-failures}}
+\end{equation}
+
+\begin{figure}
+    \includegraphics[width=1\columnwidth]{./schema/results_salfner.eps}
+    \caption{}
+    \label{fig:results_salfner}
+\end{figure}
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -581,8 +652,8 @@ useful) parallelization techniques applicable on the algorithm. The generally
 known forward algorithm as well as the extended version proposed in the
 reference work is discussed. Further, scaling techniques of the forward
 variables and their impact on data representation choices are presented.
-Finally the observations presented in an overview and an appropriate choice on
-possible acceleration \gls{hw} is made.
+Finally the observations are presented in an overview and an appropriate choice
+on possible acceleration \gls{hw} is made.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -597,17 +668,17 @@ by multiplying the initial state probability with the emission probability of
 the first observation symbol of the sequence (cf equation
 \ref{eq:forward_init}). The computation of the following forward variables
 consists of three nested loops: the outer loop iterates over the $ L $ sets of
-$ N $ $ \alpha $ variables, where each variable depends on the prior computed
-$ \alpha $ variable and the k-th observation symbol of a sequence. The first
-inner loop iterates over the $ N $ $ \alpha $ variables of one set, where each
-variable is computed with the most inner loop. The two nested inner loops form
-the Matrix-Vector-Vector multiplication
+$ N $ $ \alpha $ variables, where each variable $\alpha_k(i)$ depends on all
+prior computed variables $\alpha_{k-1}$ and the k-th observation symbol of
+a sequence. The first inner loop iterates over the $ N $ $ \alpha $ variables
+of one set, where each variable is computed with the most inner loop. The two
+nested inner loops form the Matrix-Vector-Vector multiplication
 \begin{equation}
     \label{eq:mvv}
-    \alpha_{k+1} = TP * \alpha_k \cdot B(o_k)
+    \alpha_{k+1} = Q \alpha_k B(o_k)
 \end{equation}
 where $ \alpha_k $ is a vector of size $ N $ of the prior computed $ \alpha
-$ variables, $ TP $ a matrix of size $ N \times N $ containing the transition
+$ variables, $ Q $ a matrix of size $ N \times N $ containing the transition
 probabilities and $ B(o_k) $ a vector of size $ N $ containing the emission
 probabilities of the k-th observation symbol. Note that the first
 multiplication is a Matrix-Vector multiplication that results in a vector,
@@ -642,7 +713,7 @@ is an extension to the forward algorithm presented in the listings
 transition probabilities, the extended algorithm computes a new transition
 probability matrix (size $ N \times N$) for each arriving observation symbol,
 by considering the delay of the new symbol with respect to the prior symbol.
-The computation of the transition probability matrix $ TP $ is implemented with
+The computation of the transition probability matrix $ Q $ is implemented with
 listing \ref{list:ext} and formally defined by the equations \ref{eq:V},
 \ref{eq:D}, \ref{eq:D_fact} and \ref{eq:kernel}. As described in chapter
 \ref{ch:event_sequ}, also here for reasons of simplification, only one kernel
@@ -678,7 +749,7 @@ finalization. Because of the recursive nature of the algorithm, all steps
 variables. For this reason a direct parallelization of the steps is not
 possible. However, at every arrival of a new observation symbol, the last $L$
 elements of the observation symbol sequence are used to compute the likelihood
-(cf. figure \ref{fig:sliding}). This can be exploited to pipeline the steps in
+(cf figure \ref{fig:sliding}). This can be exploited to pipeline the steps in
 order to increase the throughput. By building a pipeline of $L+1$ stages, where
 each step of the forward algorithm corresponds to a pipeline stage,
 a likelihood is computed at every completion of a step, with a latency of
@@ -688,17 +759,17 @@ the same amount of clock cycles). The throughput of a pipelined compared to
 a non-pipelined system is increased by factor $L$ (assuming an infinite runtime
 or by ignoring the setup time). Another and more important fact, that makes the
 pipeline architecture very beneficial in this particular case: the
-configuration allows to load the transition probabilities $TP$ and the emission
+configuration allows to load the transition probabilities $Q$ and the emission
 probabilities $b_i(o_k)$ for all steps at the same time, which reduces the load
 operations by factor $L$. This is visualized by the table \ref{tab:pipeline}.
 The table shows the pipeline stages with input values that are fed to the stage
-before the execution (note, that the input values $TP$ and $B$ always depend on
+before the execution and the output values resulting after the execution of
+the pipeline stage. Figure \ref{fig:pipeline} shows a schematic representation
+of the pipeline. Note, that the input values $Q$ and $B$ always depend on
 the same observation symbol. The parameter $d_k$ of the transition
 probabilities can be ignored in this case, because only in the extended forward
 algorithm the they depend on $d_k$. This will be discussed further when the
-extension is considered) and the output values resulting after the execution of
-the pipeline stage. Figure \ref{fig:pipeline} shows a schematic representation
-of the pipeline.
+extension is considered.
 
 \begin{figure}
     \centering
@@ -719,18 +790,18 @@ of the pipeline.
     \hline
     \hline
     $O_1$ & in
-        & $B(O_1)$ & $B(O_1)$, $TP(d_1)$, 0
+        & $B(O_1)$ & $B(O_1)$, $Q(d_1)$, 0
         & \dots
-        & $B(O_1)$, $TP(d_1)$, 0 & 0 \\
+        & $B(O_1)$, $Q(d_1)$, 0 & 0 \\
         & out
         & $\alpha_1(O_1)$ & 0
         & \dots
         & 0 & 0 \\
     \arrayrulecolor{mysmokegray}\hline
     $O_2$ & in
-        & $B(O_2)$ & $B(O_2)$, $TP(d_2)$, $\alpha_1(O_1)$
+        & $B(O_2)$ & $B(O_2)$, $Q(d_2)$, $\alpha_1(O_1)$
         & \dots
-        & $B(O_2)$, $TP(d_2)$, 0 & 0 \\
+        & $B(O_2)$, $Q(d_2)$, 0 & 0 \\
         & out
         & $\alpha_1(O_2)$ & $\alpha_2(O_{1,2})$
         & \dots
@@ -739,18 +810,18 @@ of the pipeline.
     \vdots & & \vdots & \vdots & & \vdots & \vdots \\
     \hline
     $O_{L}$ & in
-        & $B(O_L)$ & $B(O_L)$, $TP(d_L)$, $\alpha_1(O_{L-1})$
+        & $B(O_L)$ & $B(O_L)$, $Q(d_L)$, $\alpha_1(O_{L-1})$
         & \dots
-        & $B(O_L)$, $TP(d_L)$, $\alpha_{L-1}(O_{1,\dots,{L-1}})$ & 0 \\
+        & $B(O_L)$, $Q(d_L)$, $\alpha_{L-1}(O_{1,\dots,{L-1}})$ & 0 \\
         & out
         & $\alpha_1(O_L)$ & $\alpha_2(O_{{L-1},L})$
         & \dots
         & $\alpha_L(O_{1,\dots,L})$ & 0 \\
     \hline
     $O_{L+1}$ & in
-        & $B(O_{L+1})$ & $B(O_{L+1})$, $TP(d_{L+1})$, $\alpha_1(O_L)$
+        & $B(O_{L+1})$ & $B(O_{L+1})$, $Q(d_{L+1})$, $\alpha_1(O_L)$
         & \dots
-        & $B(O_{L+1})$, $TP(d_{L+1})$, $\alpha_{L-1}(O_{2,\dots,L})$ & $\alpha_L(O_{1,\dots,L})$ \\
+        & $B(O_{L+1})$, $Q(d_{L+1})$, $\alpha_{L-1}(O_{2,\dots,L})$ & $\alpha_L(O_{1,\dots,L})$ \\
         & out
         & $\alpha_1(O_{L+1})$ & $\alpha_2(O_{L,{L+1}})$
         & \dots
@@ -778,38 +849,39 @@ parallelization options can be found. In the initial step, $N$ components of
 the first forward variable $\alpha_1$ are computed by multiplying independent
 pairs of an initial state probability $\pi_i$ and an emission probability of
 the first observation symbol $b_i(o_0)$. This can be fully parallelized by
-replicating the multiplication operation $N$ times. Doing this results in
-a increase of the throughput by factor $N$ and a decrease of the latency by
+replicating the multiplication operation $N$ times. Doing this results in an
+increase of the throughput by factor $N$ and a decrease of the latency by
 factor $\frac{1}{N}$, assuming that $N$ multipliers are available and the
 memory bandwidth is able to provide a data throughput $N$ times higher than in
 the sequential case (including the memory interface).
 
 The computation of the following forward variables $\alpha_k$, with $k
-= 2 \dots L$ are similar. To compute the $N$ elements of one step, the
-Matrix-Vector-Vector multiplication described by equation \ref{eq:mvv} must be
-performed. Considering first only the Matrix-Vector multiplication, this can be
-parallelized by decomposing the matrix in to subsets and then use multiple
-computational units to perform multiplication and/or accumulation operations in
-parallel on the subsets. An intuitive decomposition can be done either by
-block-striped matrix partitioning (decomposition into subsets of rows or
-columns) or by checkerboard block matrix partitioning (decomposition in
-rectangular sets of elements). These partitioning methods are shown in figure
-\ref{fig:matrix_partitioning}. The number of subsets must correspond to the
-number of available computational units to perform the necessary operations.
-The choice of decomposition is heavily dependant on the accelerator
-architecture (e.g.  communication between computational units, memory
-architecture). The resulting vector can then be multiplied element wise by the
-emission probability vector, which is again the same case as described above.
-In case of the block-striped matrix partitioning, the maximal achievable
-increase of the throughput is a factor of $N$ and the latency can be decreased
-by factor $\frac{1}{N}$, assuming that $N$ computational units are available to
-perform the multiplication and accumulation operation on each subset, $N$
-multipliers to compute the final element wise vector-vector multiplication and
-a memory interface, that can handle a data throughput that is $N$ times higher
-than in the sequential case. The checkerboard partitioning yields a lower gain
-but may be considered in case of fixed computational unit architecture (\gls{cpu},
-\gls{gpu}) in order to increase the utility of recourses available in each unit.
-Apart from homogeneous partitioning methods as mentioned above also
+= 2 \dots L$ are equivalent in terms of \gls{hw}. To compute the $N$ elements
+of one step, the Matrix-Vector-Vector multiplication described by equation
+\ref{eq:mvv} must be performed. Considering first only the Matrix-Vector
+multiplication, this can be parallelized by decomposing the matrix in to
+subsets and then use multiple computational units to perform multiplication
+and/or accumulation operations in parallel on the subsets. An intuitive
+decomposition can be done either by block-striped matrix partitioning
+(decomposition into subsets of rows or columns) or by checkerboard block matrix
+partitioning (decomposition in rectangular sets of elements). These
+partitioning methods are shown in figure \ref{fig:matrix_partitioning}. The
+number of subsets must correspond to the number of available computational
+units to perform the necessary operations. The choice of decomposition is
+heavily dependant on the accelerator architecture (e.g. communication between
+computational units, memory architecture). The resulting vector can then be
+multiplied element wise by the emission probability vector, which is again the
+same case as the initial step described above. In case of the block-striped
+matrix partitioning, the maximal achievable increase of the throughput is
+a factor of $N$ and the latency can be decreased by factor $\frac{1}{N}$,
+assuming that $N$ computational units are available to perform the
+multiplication and accumulation operation on each subset, $N$ multipliers to
+compute the final element wise vector-vector multiplication and a memory
+interface, that can handle a data throughput that is $N$ times higher than in
+the sequential case. The checkerboard partitioning yields a lower gain but may
+be considered in case of fixed computational unit architecture (\gls{cpu},
+\gls{gpu}) in order to increase the utility of recourses available in each
+unit. Apart from homogeneous partitioning methods as mentioned above also
 inhomogeneous solutions have been proposed \cite{IPDPSW12_DeFlumere, clarke11}.
 These are not considered in this work, as the focus lies on homogeneous
 computation units.
@@ -854,28 +926,6 @@ implementations.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
-\section{Prediction Model Simplification}
-\label{ch:analysis_simple}
-
-Until now, it was always assumed, that the model is fully connected (ergodic),
-i.e. that every state can be reached from every other state. This is not
-necessarily the case, as it is often possible to describe a system with
-a simpler model. By adding more constraints to the possible state transitions
-(e.g. only one direction, feed-forward), only a few elements in the transition
-probability matrix are non-zero. In this case it is beneficial to use an array
-(adjacency list) instead of a matrix to represent the transition probabilities.
-Different methods have been proposed on how to store sparse matrices, but they
-are usually strongly dependant of the architecture and will hence be discussed
-only after the type of acceleration device has been chosen. A list with only
-non-zero elements instead of a sparse matrix reduces the necessary memory to
-store the data and makes a lot of computations superfluous. A Matrix-Vector
-multiplication parallelization as described in the previous section would not
-be beneficial anymore as a lot of computational units would be idle in most of
-the time. A sparse matrix vector multiplication method should be used in this
-case, but this has not been analyzed in this thesis.
-
-%-------------------------------------------------------------------------------
-%===============================================================================
 \section{Scaling and Data Representation}
 \label{ch:analysis_scaling}
 
@@ -887,8 +937,8 @@ method as proposed in the reference work, the complexity of calculating one
 $\alpha_k$ vector goes from $N^2$ (no scaling) to $N^2 + 2N + 1$ (scaling),
 which is the same order $O(N^2)$. However, the introduction of scaling may
 increase the usage of recourses significantly: In order to scale $\alpha_k$,
-the division operation is used to compute the scaling factor.  Division is far
-more complex than multiplication and hence uses more recourses.  Additionally,
+the division operation is used to compute the scaling factor. Division is far
+more complex than multiplication and hence uses more recourses. Additionally,
 instead of the sequence likelihood (equation \ref{eq:P}) the sequence
 log-likelihood (equation \ref{eq:Plog}) needs to be computed, with the even
 more complex log operation.
@@ -915,7 +965,7 @@ knowledge, that all the operands are probabilities,
 \begin{equation}
     \label{eq:scaling_sum}
     \sum\limits_{i=1}^{N} \pi_i = 1, \
-    \sum\limits_{j=1}^{N} tp_{ij} = 1, \
+    \sum\limits_{j=1}^{N} q_{ij} = 1, \
     \sum\limits_{j=1}^{M} b_{ij} = 1
 \end{equation}
 
@@ -924,10 +974,10 @@ and doing the computation of the forward variables,
 \begin{equation}\begin{split}
     \label{eq:scaling_estimation}
     &\hat{\alpha}_1 = \hat{b} \cdot \hat{\pi} = \frac{1}{NM} \\
-    &\hat{\alpha}_2 = N \cdot \hat{\alpha}_1 \cdot \hat{tp} \cdot \hat{b} =
+    &\hat{\alpha}_2 = N \cdot \hat{\alpha}_1 \cdot \hat{q} \cdot \hat{b} =
         N \cdot \frac{1}{NM} \cdot \frac{1}{N} \cdot \frac{1}{M} =
         \frac{1}{NM^2} \\
-    &\hat{\alpha}_3 = N \cdot \hat{\alpha}_2 \cdot \hat{tp} \cdot \hat{b} =
+    &\hat{\alpha}_3 = N \cdot \hat{\alpha}_2 \cdot \hat{q} \cdot \hat{b} =
         N \cdot \frac{1}{NM^2} \cdot \frac{1}{N} \cdot \frac{1}{M} =
         \frac{1}{NM^3} \\
     &\vdots\\
@@ -954,9 +1004,9 @@ explained in detail in chapter \ref{ch:design}.
 Another aspect to consider is the choice of data representation (floating point
 versus fixed point). This depends on one hand on the necessary precision and on
 the other hand on the choice of accelerator type. While general purpose
-\gls{hw} such as \gls{cpu}, \gls{gpu} and \gls{dsp} (to some degree) offer an
+\gls{hw} such as a \gls{cpu}, \gls{gpu} or \gls{dsp} (to some degree) offer an
 abstraction to make the representation type transparent to the developer,
-specialized \gls{hw} such as \gls{fpga} or \gls{asic} offer no such
+specialized \gls{hw} such as a \gls{fpga} or \gls{asic} offer no such
 abstraction. For the later devices, floating point operations increase the
 complexity of the \gls{hw} design and the necessary \gls{hw} resources
 considerably. In terms of performance, general purpose devices benefit also
@@ -986,7 +1036,7 @@ by using the delay of the symbol (equation \ref{eq:delay}) and the sum of
 different cumulative distribution functions (equations \ref{eq:V} and
 \ref{eq:D}). To compute $N^2$ cumulative distribution functions is very
 expensive but it only needs to be computed once per $d_k$ and can then be
-stored for later usage.  A transition probability matrix can be used for the
+stored for later usage. A transition probability matrix can be used for the
 computation of $L$ forward variables due to the continuous computation of
 likelihood values (as depicted in figure \ref{fig:sliding}). This implies, that
 storage for $L$ such matrices must be available or the matrix must be
@@ -1055,7 +1105,7 @@ examples is provided:
         distributions are not known. The Gaussian (normal) cumulative
         distribution function cannot be expressed in terms of elementary
         functions, which is the reason why the special error function $\erf$ is
-        used. It is defined by the following equation:
+        used. The \gls{cdf} is defined by the following equation:
         \begin{equation}
             \label{eq:kernel}
             \kappa_{ij, gauss}(d_k | \mu_{ij}, \sigma_{ij}) = 
@@ -1097,16 +1147,16 @@ $N$ subtracters to correct the diagonal elements.
 \section{Parallelization Options and Scalability}
 \label{ch:analysis_all}
 
-In the sections above, a lot of parallelization has been proposed. A maximal
-parallelization can hardly be achieved due to the immense requirement of
-recourses and is also not necessary because of dependencies. In a first step,
-a theoretical analysis (in terms of complexity order) of the different
+In the sections above, a lot of parallelization options have been proposed.
+A maximal parallelization can hardly be achieved due to the immense requirement
+of recourses and is also not necessary because of dependencies. In a first
+step, a theoretical analysis (in terms of complexity order) of the different
 parallelization options and their combination is done. Then the results will be
 discussed and a choice will be made. Finally some conclusions about a finer
 degree of parallelization will be drawn in respect to the chosen architecture.
-Table \ref{tab:summary_O} shows the pipelined architecture (cf. figure
+Table \ref{tab:summary_O} shows the pipelined architecture (cf figure
 \ref{fig:pipeline}), the parallel architecture in the case of maximal row
-partitioning (cf. figure \ref{fig:matrix_partitioning}), the combination of
+partitioning (cf figure \ref{fig:matrix_partitioning}), the combination of
 both architectures and in the last column the combination of both architectures
 plus the reduction tree (cf figure \ref{fig:red_tree}). The basic and the
 extended forward algorithm are both of the same complexity order. As only the
@@ -1151,22 +1201,23 @@ architecture comes at the price of a larger memory interface (simultaneous
 memory access is required). By combining both architectures (3rd column), the
 throughput can be increased by factor $N$ at the cost of increasing the order
 of computation units. Adding also the reduction tree, throughput and latency
-are increased, resp. decreased by an additional factor of $\log N$. This comes
-again at the cost of increasing the order of computation units further. While
-the benefits are welcome, $N^3$ is simply to high to realistically implement
-such a solution.  Already with a small $N$ a huge server farm or thousands of
-\glspl{fpga} or \glspl{gpu} would be necessary. Considering this, the reduction
-tree parallelization method will not be used as it gives the fewest benefits
-($O(LogN)$) for its cost ($O(N)$).  Computation units in an order of $N^2$ (2nd
-column) is feasible for small $N$ by combining multiple devices. While this may
-be acceptable for a very important computation where lots of people depend upon
-(eg. weather forecast, Google queries, etc.) failure prediction hardly falls
-into this category especially if failures of an embedded system are predicted.
-Additionally, using multiple devices in order to scale the problem, implies
-off-chip-communication and -memory. This will result in huge bottlenecks and
-have a huge impact on the actual speedup. This leaves the first two columns to
-compare for the application at hand (A combination of both methods can still be
-considered, but not by using maximal parallelization).
+are increased, respectively decreased by an additional factor of $\log N$. This
+comes again at the cost of increasing the order of computation units further.
+While the benefits are welcome, $N^3$ is simply to high to realistically
+implement such a solution. Already with a small $N$ a huge server farm or
+thousands of \glspl{fpga} or \glspl{gpu} would be necessary. Considering this,
+the reduction tree parallelization method will not be used as it gives the
+fewest benefits ($O(LogN)$) for its cost ($O(N)$). Computation units in an
+order of $N^2$ (2nd column) is feasible for small $N$ by combining multiple
+devices. While this may be acceptable for a very important system,  where
+lots of people depend upon (e.g. weather forecast, Google queries, etc.)
+failure prediction hardly falls into this category especially if failures of an
+embedded system are predicted.  Additionally, using multiple devices in order
+to scale the problem, implies off-chip-communication and -memory. This will
+result in huge bottlenecks and have a huge impact on the actual speedup. This
+leaves the first two columns to compare for the application at hand (A
+combination of both methods can still be considered, but not by using maximal
+parallelization).
 
 Table \ref{tab:summary_D} now only compares the pipelined architecture with the
 parallel architecture but with more detailed estimations of resource usage.
@@ -1266,7 +1317,7 @@ memory usage or the number of computational units (hence the two columns).
 The benefits of a parallel architecture over the pipelined are first and
 foremost the reduced latency and in case of the basic algorithm also the lower
 memory footprint. If the acceleration architecture of choice has a memory
-interface that allows the required throughput, for the basic algorithm this
+interface that allows the required throughput, for the basic algorithm, this
 architecture should be chosen. In case of the extended algorithm this is only
 possible if enough computational units are available (and the \gls{cdf} computation
 is not to complex) or if the on-chip memory is large enough to save transition
@@ -1292,18 +1343,18 @@ compute the transition probabilities. Parallelization is only possible for very
 simple \gls{cdf} computations and for a small $N$.
 
 The scalability is in both cases limited, but more so with the parallel
-architecture: If $N$ or $L$ becomes large such that
-off-chip memory is necessary (already for very small $N$ or $L$ for \glspl{cpu} and
-\glspl{gpu}, less so for more flexible architectures like \glspl{fpga} or \glspl{asic}) the memory
-interface will be to small to handle memory access simultaneously and hence
-become the bottleneck. The pipelined architecture does not have this drawback
-but has a slightly higher memory footprint. If memory can be handled on-chip but
-multiple chips are used to increase the number of recourses, both
+architecture: If $N$ or $L$ becomes large such that off-chip memory is
+necessary (already for very small $N$ or $L$ for \glspl{cpu} and \glspl{gpu},
+less so for more flexible architectures like \glspl{fpga} or \glspl{asic}) the
+memory interface will be to small to handle memory access simultaneously and
+hence become the bottleneck. The pipelined architecture does not have this
+drawback but has a slightly higher memory footprint. If memory can be handled
+on-chip but multiple chips are used to increase the number of recourses, both
 architectures can be scaled easily in $L$ dimension (sequence length) but only
 with difficulty in $N$ dimension (number of states) because the necessary
 communication links (all components of the vector $\alpha_{k+1}$ always depends
-on all components of the vector $\alpha_k$). The scaling in dimension $N$ of the
-pipelined architecture only depends on the memory usage, while the parallel
+on all components of the vector $\alpha_k$). The scaling in dimension $N$ of
+the pipelined architecture only depends on the memory usage, while the parallel
 architecture has a dependency of $N$ for the computation units as well as for
 the memory.
 
@@ -1315,7 +1366,7 @@ the memory.
 \emph{\color{red}better title?}
 
 For being able to choose an appropriate accelerator type, first a list with
-different acceleration options is presented. For each type the most common
+different acceleration \gls{hw} is presented. For each type the most common
 benefits and shortcomings are mentioned. At the end of the section a choice
 will be made using the following list and the observations discussed in the
 previous sections.
@@ -1326,7 +1377,7 @@ previous sections.
         (usually) of the type \gls{sisd}. It is very flexible in terms of
         \gls{sw} interpretation (with the use of compilers) and allows to
         implement any kind of function in a fast, easy and maintainable fashion
-        with no requirements in \gls{hw} knowledge.  Operations like division,
+        with no requirements in \gls{hw} knowledge. Operations like division,
         exponential function and logarithm are available as well as the
         floating point number representation. All operations can be executed
         with very high precision and at high clock frequencies (up to 3 GHz).
@@ -1346,11 +1397,11 @@ previous sections.
         division, exp and log functions and provides floating point number
         representation. \glspl{gpu} can work with high precision and at high
         clock frequencies. The power consumption of a \gls{gpu} is very high
-        due to the high frequencies and the streaming processors.  While the
+        due to the high frequencies and the streaming processors. While the
         \gls{hw} abstraction layer provides flexibility in \gls{sw} and ease of
         use, it is the main reason for a computation overhead for basic
         operations. The fixed \gls{hw} architecture (especially the memory
-        hierarchy) can prove to be a drawback in specific cases (e.g. data
+        hierarchy) can prove to be a drawback in specific cases (e.g. if data
         usage provokes always cache misses).
     \item[\acrshort{dsp}] \hfill \\
         The \acrfull{dsp} is a specialized integrated circuit, largely used for
@@ -1365,10 +1416,10 @@ previous sections.
         precisions. A \gls{dsp} provides a lot of specific computation power
         for a low price.
     \item[\acrshort{fpga}] \hfill \\
-        The \acrfull{fpga} is a customizable integrated circuit.  It provides
+        The \acrfull{fpga} is a customizable integrated circuit. It provides
         large recourses of logic gates as well as standard blocks such as RAM
         or highly optimized \gls{macc} units. \glspl{fpga} provide
-        high performance for very specific design optimized for one function.
+        high performance for very specific designs, optimized for one function.
         Once an \gls{fpga} is configured, as long as it keeps this
         configuration no other function will run on this device as it is the
         direct \gls{hw} representation of the function. This direct
@@ -1377,7 +1428,7 @@ previous sections.
         provide a high amount of \gls{hw} flexibility that is only toped by
         \glspl{asic} (see below). This flexibility comes at a medium price as
         \glspl{fpga} can be produced in big lots but are more difficult to
-        produce than \glspl{dsp}.  A huge advantage is the possibility the
+        produce than \glspl{dsp}. A huge advantage is the possibility to
         build very big memory interfaces inside the chip and customize the
         memory architecture for the application at hand. The drawback of
         \glspl{fpga} is the increased development time necessary to implement
@@ -1385,9 +1436,9 @@ previous sections.
         500MHz (this is low compared to \glspl{cpu} or \glspl{gpu}) and the
         absence of division, exponential and logarithm functions. All units are
         optimized for fixed point representation and floating point numbers
-        must be implemented manually.  Core generators and very powerful
+        must be implemented manually. Core generators and very powerful
         synthesis tools try to amend these drawbacks but still a very deep
-        knowledge of \gls{hw} is necessary to successfully implement a design
+        knowledge of \gls{hw} is necessary to successfully implement a function
         on \gls{fpga}.
     \item[\acrshort{asic}] \hfill \\
         The \acrfull{asic} is, as the name already tells, an integrated circuit
@@ -1405,17 +1456,17 @@ previous sections.
 \end{description}
 
 Comparing the accelerator types mentioned in the list above in a general
-manner, one can conclude that the further down the list one goes, the better is
-the performance - prower consumption ratio and the lower is the flexibility of
-the device to accept general function descriptions (cf figure \ref{fig:hw}, eg.
-a function description for a \gls{fpga} must be a lot more specific than one for
-a \gls{gpu} but the performance-power consumption ratio is a lot better in case of
-the \gls{fpga}). For this work, one key point is high performance, because the
-algorithm to implement is computation intensive and needs to be executed fast.
-Another important point is the size of the system: the target application to
-predict failures is an embedded system, where space is usually limited. Power
-consumption may not be a main aspect, but it certainly needs to be considered
-to not exceed requirements of the main system.
+manner, one can conclude that the further down the list one goes, the better
+the performance - power consumption ratio and the lower the flexibility of the
+device to accept general function descriptions (cf figure \ref{fig:hw}, e.g.
+a function description for a \gls{fpga} must be a lot more specific than one
+for a \gls{gpu} but the performance-power consumption ratio is a lot better in
+case of the \gls{fpga}). For this work, one key point is high performance,
+because the algorithm to implement is computational intensive and needs to be
+executed fast.  Another important point is the size of the system: the target
+application to predict failures is an embedded system, where space is usually
+limited. Power consumption may not be a main aspect, but it certainly needs to
+be considered to not exceed requirements of the main system.
 
 \begin{figure}
     \centering
@@ -1428,24 +1479,45 @@ Due to the limited parallelization options or the huge power and space
 requirements of \glspl{cpu}, this accelerator type is not suitable for the
 application in question. \glspl{gpu} provide a lot of computation power at
 a low price but have drawbacks in terms of architecture flexibility, space and
-power requirements.  \glspl{gpu} are a far better option than \glspl{cpu} but
+power requirements. \glspl{gpu} are a far better option than \glspl{cpu} but
 may not be ideal because of the fixed memory interface. \glspl{dsp} would be
 the device of choice if only the basic forward algorithm is considered. Due to
 the high performance at a low cost of \glspl{dsp}, and the fact that the basic
-forward algorithm mainly uses \gls{macc} operations one or multiple
-floating point \gls{dsp} devices could be used to efficiently implement the
-algorithm. In case of the extended algorithm a \gls{dsp} device causes to big
-an overhead to compute the \gls{cdf} and will be the bottleneck of the design.
-For this reason a more flexible device must be chosen.  The most flexible
-architecture is an \gls{asic}. \glspl{asic} are very expensive in terms of
-money and development time, two recourses that are not available for this work.
-This leaves the \gls{fpga}: An \gls{fpga} combines the parallel power of
-\glspl{dsp} for \gls{macc} operations but adds the possibility to
-design a specific \gls{hw} architecture to compute the transition probabilities
-needed for the extension. While the performance will not be at a level of an
-\gls{asic}, the specialized \gls{hw} will still outperform any other device
-because of the customizable memory interface (even at the lower frequencies of
-\glspl{fpga}).
+forward algorithm mainly uses \gls{macc} operations, one or multiple floating
+point \gls{dsp} devices could be used to efficiently implement the algorithm.
+In case of the extended algorithm a \gls{dsp} device causes to big an overhead
+to compute the \gls{cdf} and will be the bottleneck of the design.  For this
+reason a more flexible device must be chosen. The most flexible architecture is
+an \gls{asic}. \glspl{asic} are very expensive in terms of money and
+development time, two recourses that are not available for this thesis.  This
+leaves the \gls{fpga}: An \gls{fpga} combines the parallel power of \glspl{dsp}
+for \gls{macc} operations but adds the possibility to design a specific
+\gls{hw} architecture to compute the transition probabilities needed for the
+extension. While the performance will not be at a level of an \gls{asic}, the
+specialized \gls{hw} will still outperform any other device because of the
+customizable memory interface (even at the lower frequencies of \glspl{fpga}).
+
+%-------------------------------------------------------------------------------
+%===============================================================================
+\section{Prediction Model Simplification}
+\label{ch:analysis_simple}
+
+Until now, it was always assumed, that the model is fully connected (ergodic),
+i.e. that every state can be reached from every other state in the \gls{hsmm}.
+This is not necessarily the case, as it is often possible to describe a system
+with a simpler model. By adding more constraints to the possible state
+transitions (e.g. only one direction, feed-forward), only a few elements in the
+transition probability matrix are non-zero. In this case it is beneficial to
+use an array (adjacency list) instead of a matrix to represent the transition
+probabilities. Different methods have been proposed on how to store sparse
+matrices, but they are usually strongly dependant of the architecture and will
+hence be discussed only after the type of acceleration device has been chosen.
+A list with only non-zero elements instead of a sparse matrix reduces the
+necessary memory to store the data and makes a lot of computations superfluous.
+A Matrix-Vector multiplication parallelization as described in the previous
+section would not be beneficial anymore as a lot of computational units would
+be idle in most of the time. A sparse matrix vector multiplication method
+should be used in this case, but this will not been analyzed in this thesis.
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1472,7 +1544,7 @@ algorithm.
 
 The top architecture of the proposed algorithm is depicted in figure
 \ref{fig:arch_top}. The non-failure as well as all the failure sequence
-detection blocks denoted as "non-failure" and "failure type s" represent each
+detection blocks denoted as "non-failure" and "failure type s", represent each
 the complete forward algorithm as it was described in the previous chapter.
 A system controller, denoted as "SYS CTRL" governs these blocks and the flash
 (FLASH CRTL)and memory controllers (RAM CTRL) load data from persistent
@@ -1497,9 +1569,9 @@ chapter \ref{ch:analysis_parallel}. The figure \ref{fig:pipeline} depicts the
 basic schematics. The same architecture is shown in figure \ref{fig:arch_pipe}
 with a simplified \gls{rtl} schematic. The main aspect of the chosen design is
 to use the high performance \gls{macc} units available in modern \glspl{fpga}.
-These so called \gls{dsp}-slices allow to perform, besides others, fully
-pipelined \gls{macc} operations at frequencies of up to 450 MHz. The manual
-\cite{xilinx_DSP} describes the vast functional possibilities of the
+These so called \gls{dsp}-slices allow to perform, besides other functions,
+fully pipelined \gls{macc} operations at frequencies of up to 450 MHz. The
+manual \cite{xilinx_DSP} describes the vast functional possibilities of the
 \gls{dsp}-slices available in the series 7 \glspl{fpga} of
 Xilinx\footnote{http://www.xilinx.com}. As shown in figure \ref{fig:arch_pipe},
 in each pipeline stage the transition probabilities (coming either from memory
@@ -1514,10 +1586,10 @@ all $N$ component of the $\alpha$ vector are computed. After each iteration,
 the accumulator must be cleared. It takes three pipeline stages to pipeline the
 multiply- accumulate operation and two stages for the multiply operation. It
 takes $N+3$ cycles to accumulate all multiplication pairs ($\alpha_{k-1, j}
-* tp_{i,j}$) and $2$ cycles to perform the final multiplication. This adds up
-to $N^2+5)$ cycles to compute all components of the vector $\alpha_k$ (the
-setup time needs only to be considered once if a well timed reset of the
-accumulator is performed).
+* q_{i,j}$) and $2$ cycles to perform the final multiplication. This adds up to
+$N^2+5$ cycles to compute all components of the vector $\alpha_k$ (the setup
+time needs only to be considered once if a well timed reset of the accumulator
+is performed).
 
 \begin{figure}
     \centering
@@ -1529,23 +1601,23 @@ accumulator is performed).
 With this design, there are several things to note. A first concern focuses on
 the second multiplier of the chain: It is used only once every $N+3$rd cycle
 and computes either nonsense or is idle (if disabled) during the rest of the
-time.  This is a very poor utilization of recourses and can be optimized by
-reusing the first multiplier to do the second multiplication. Doing this
+time. This is a very poor utilization of recourses and can be optimized by
+reusing the first multiplier to perform the second multiplication. Doing this
 increases the necessary cycles to a minimum of $N*(N+3)+2$ cycles but cuts the
-necessary multiplication units (\gls{dsp}-slices) by half. Another point to
-note concerns the \gls{fifo} queue. The queue is supposed to store the arriving
-components of the vector $\alpha_{k-1}$ and use them to compute the next vector
-$\alpha_k$.  However, each component of the vector $\alpha_{k-1}$ is used $N$
-times, as every component of the new vector $\alpha_k$ depends on every
-component of the previous vector $\alpha_{k-1}$. Therefore it is not possible
-to use only one \gls{fifo} queue. A solution to this problem is to use two
-queues, one to store the arriving new values needed for the next iteration and
-one to read the values that have been stored in the last iteration. At the end
-of the computation of all components of the vector $\alpha$, the queues are
-switched.  While a queue is in read state, it operates as a circular buffer by
+amount of required multiplication units (\gls{dsp}-slices) by half. Another
+point to note concerns the \gls{fifo} queue. The queue is supposed to store the
+arriving components of the vector $\alpha_{k-1}$ and use them to compute the
+next vector $\alpha_k$. However, each component of the vector $\alpha_{k-1}$ is
+used $N$ times, as every component of the new vector $\alpha_k$ depends on
+every component of the previous vector $\alpha_{k-1}$. Therefore it is not
+possible to use only one \gls{fifo} queue. A solution to this problem is to use
+two queues, one to store the arriving new values needed for the next iteration
+and one to read the values that have been stored in the last iteration. At the
+end of the computation of all components of the vector $\alpha$, the queues are
+switched. While a queue is in read state, it operates as a circular buffer by
 storing back the value it has just read. Another solution is to use addressable
 memory blocks instead of \glspl{fifo} and use a simple counter to increasingly
-address the required value to read or to store a new vale. While the solution
+address the required value to read or to store a new vaule. While the solution
 with the \glspl{fifo} is easier to control, the memory block solution offers
 another big advantage: if a simple model for the state transitions is used (as
 discussed in chapter \ref{ch:analysis_simple}), a lot of components of the
@@ -1592,8 +1664,9 @@ cycles. This is the amount of cycles available to compute $N^2$ transition
 probabilities if the throughput of the system should stay the same. Introducing
 this pipeline doubles the latency. Figure \ref{fig:arch_ext} shows the
 \gls{rtl} implementation of the transition probabilities. It takes as input the
-\gls{cdf} values and performs the correction of the diagonal of the $V$ matrix
-(as expressed in equation \ref{eq:V}). While the \gls{cdf} values are stored
+\gls{cdf} values and the transmission probability values $P$ and performs the
+correction of the diagonal of the $V$ matrix (as expressed in equation
+\ref{eq:V}). While the product of the \gls{cdf} and the $P$ values are stored
 directly into an internal memory block, the elements are accumulated. After $N$
 cycles, the diagonal value corresponding to the row that was just accumulated
 ($v_{i, sum} = \sum\limits_{\substack{h=1 \\ h \neq i}}^{N} v_{ih}$), is
@@ -1632,9 +1705,17 @@ scope of this thesis to design and/or implement these elements. There is
 however the Xilinx CORE Generator
 tool\footnote{http://www.xilinx.com/tools/coregen.htm} that allows to build
 a vast amount of functional blocks, including floating point operations.
-Unfortunately there is no support for exponential functions which is the reason
-the extension will not be implemented on a \gls{hw} solution within the scope
-of this thesis.
+Unfortunately there is no support for exponential functions. Another option of
+solving this problem is to use a look-up-table storing results of a precomputed
+exponential function. The range of the computed values depends on the trained
+features of the chosen \gls{cdf}. With an interpolation, intermediate values
+are calculated. The benefit of this option is the possibility to go back to
+a fixed point representation for all operations. To precompute the complete
+\gls{cdf} would be challenging, due to the fact that for each value in $V$
+specific \gls{cdf} parameters are required and hence imply an increased memory
+complexity to the order $O(C*N^2)$, with $C$ denoting the number of values
+necessary to describe the \gls{cdf}. The extension will not be implemented on
+a \gls{hw} solution within the scope of this thesis.
 
 \begin{figure}
     \centering
@@ -1671,8 +1752,8 @@ often used).
 \section{Operand Scaling and Precision}
 \label{ch:design_scaling}
 
-The \gls{dsp}-Slices used to for multiply and accumulate operations are designed for
-fixed point data representation, hence thy do not support floating point
+The \gls{dsp}-Slices used to multiply and accumulate operations are designed for
+a fixed point data representation, hence they do not support floating point
 operations. This poses no problem if an operand width can be chosen that allows
 to represent the complete spectrum of all possible values an operand can take
 (with respect to a certain precision). The continuous multiplication of
@@ -1684,19 +1765,20 @@ prevent an underflow. In this case, the \gls{dsp}-Slices need to be extended in 
 to support floating points. In the following this option is discussed and then
 compared to a fixed point solution with scaling.
 
-In order to multiply two floating point numbers, the mantissas of both numbers
-are multiplied and the exponents are added (the sign can be ignored, as
-probabilities are always positive). For the multiplication of the mantissas the
-\gls{dsp}-Slices can be used. In parallel to this operation, an external adder can
-add up the exponents. For being able to add floating point numbers (which
-should be done with the accumulator of the \gls{dsp}-Slice) the exponents of the
-numbers must be equal. To achieve that, the difference of the two exponents is
-calculated and then the mantissa of the number with the lower exponent must be
-shifted by this difference (and possibly rounded/truncated). This process is
-called normalizing. After the normalization, the mantissas can be added and
-finally the resulting value needs to be normalized again.
+For being able to add floating point numbers (which should be done with the
+accumulator of the \gls{dsp}-Slice) the exponents of the numbers must be equal.
+To achieve that, the difference of the two exponents is calculated and then the
+mantissa of the number with the lower exponent must be shifted by this
+difference (and possibly rounded/truncated). This process is called
+normalizing. After the normalization, the mantissas can be added and finally
+the resulting value needs to be normalized again. In order to multiply two
+floating point numbers, the mantissas of both numbers are multiplied and the
+exponents are added (the sign can be ignored, as probabilities are always
+positive). For the multiplication of the mantissas the \gls{dsp}-Slices can be
+used. In parallel to this operation, an external adder can add up the
+exponents. The result must then be truncated/rounded and normalized.
 
-The work \cite{FPL13_Brosser} presents a solution for a floating point
+The work \cite{FPL13_Brosser} presents a solution for floating point
 operations, including multiplication and addition, in single
 precision\footnote{IEEE 754-2008} using only one \gls{dsp}-Slice. For being able to
 omit the scaling completely, the exponent would need to be larger: assuming
@@ -1725,33 +1807,33 @@ applicable for \glspl{fpga}.
 
 \emph{\color{red} use the argumentation of those documents}
 
-The \gls{dsp}-Slices allow fixed point \gls{macc} operations with a operands
+The \gls{dsp}-Slices allow fixed point \gls{macc} operations with an operand
 of bit width 18 and one of bit width 25. Internally the device works with a bit
 width of 48 bits, which allows a lossless multiplication (43 bits) and an
 accumulation with 5 bits margin for overflow. Due to the properties expressed in
-equations \ref{eq:scaling_sum}, these fife additional bits are not necessary in
+equations \ref{eq:scaling_sum}, these five additional bits are not necessary in
 the present case. After the \gls{macc} operation, the second multiplication takes
-a gain operands of with 18 bits resp 25 bits as input. Therefore, the result of
+again operands of width 18 bits resp 25 bits as input. Therefore, the result of
 the \gls{macc} needs to be truncated. In order to not loose to much information, at
 this step scaling must be introduced.
 
 As already discussed in chapter \ref{ch:analysis_scaling} the scaling method
-proposed by the reference work must be avoided in this implementation due to
-the additional necessary operations. Instead, a scaling in base of 2 can be
-used (this corresponds to a shift): after the computation of a component of the
-initial $\alpha$ vector, a lead zero counter (\gls{lzc}) unit is introduced. This
-unit is purely combinational and counts the leading zeros of a operand. The
-minimal count of all components in the $\alpha$ vector is then forwarded into
-the next pipeline stage where it is used to to shift the result of the \gls{macc}
-operation for \gls{lzc} positions to the left (this corresponds to a multiplication
-of $2^{LZC}$). Also in this stage (and every following) a \gls{lzc} unit is added in
-the same way as described above. The \gls{lzc} results of each stage are forwarded
-and used to shift the results and accumulated. The minimum \gls{lzc} of all elements
-of the $\alpha$ vector has to be found because all operands of one stage need
-to be scaled by the same value. It must be the minimum value in order to
-prevent a overflow in the shifting operation. It is important to use the same
-value for all operants to being able to accumulate the operands without
-normalization in the next pipeline stage.
+proposed by the reference work should be avoided in this implementation due to
+the high requirements in terms of recourses. Instead, a scaling in base of
+2 can be used (this corresponds to a shift): after the computation of
+a component of the initial $\alpha$ vector, a lead zero counter (\gls{lzc})
+unit is introduced. This unit is purely combinational and counts the leading
+zeros of an operand. The minimal count of all components in the $\alpha$ vector
+is then forwarded into the next pipeline stage where it is used to to shift the
+result of the \gls{macc} operation for \gls{lzc} positions to the left (this
+corresponds to a multiplication of $2^{LZC}$). Also in this stage (and every
+following) a \gls{lzc} unit is added in the same way as described above. The
+\gls{lzc} result of each stage is added to the \gls{lzc} result of the next
+stage. The minimum \gls{lzc} of all elements of the $\alpha$ vector has to be
+found because all operands of one stage need to be scaled by the same value. It
+must be the minimum value in order to prevent an overflow in the shifting
+operation. It is important to use the same value for all operands to being able
+to accumulate the operands without normalization in the next pipeline stage.
 
 Simultaneously to the resulting likelihood, also a scaling factor is provided.
 This scaling factor can then be used in the classification step to normalize
@@ -1767,21 +1849,22 @@ current event sequence. The scaling method is presented in figure
     \label{fig:arch_pipe_scale}
 \end{figure}
 
-To perform the scaling, also a \gls{dsp}-Slice can be used by simply multiplying the
-operand with the factor $2^{LZC}$. The whole range of internal 43 bits of the
-\gls{macc} operation need to be scaled which can be achieved by two cycles of one
-\gls{dsp}-Slice. First the lower 18 bits ($op_{low}$) of the 43 internal bits ($op$)
-are introduced into the \gls{dsp}-Slice and multiplied by the factor $2^{LZC}$.
-A precomputed lookup table is used to select the factor corresponding to
-$2^{LZC}$ using \gls{lzc} as input. In next cycle, the upper 25 bits ($op_{up}$) of
-$op$ are selected and introduced into the \gls{dsp}-Slice. $op_{up}$ is shifted by
-a constant amount of 17 bits (this can be done internally by the \gls{dsp}-Slice) and
-then also multiplied by the factor $2^{LZC}$. The accumulator then adds the two
-shifted operands $op_{low}$ and $op_{up}$ together which results in a shifted
-value of $op$ by \gls{lzc} bits to the right. All these operation can be done by
-using only one \gls{dsp}-Slice. Figure \ref{fig:arch_step_scale} shows the necessary
-schematics. Also the simplified representation of the memory queue has been
-replaced in this schematic.
+To perform the scaling, also a \gls{dsp}-Slice can be used by simply
+multiplying the operand with the factor $2^{LZC}$. The whole range of internal
+43 bits of the \gls{macc} operation needs to be scaled, which can be achieved
+by two cycles of one \gls{dsp}-Slice. First the lower 18 bits ($op_{low}$) of
+the 43 internal bits ($op$) are introduced into the \gls{dsp}-Slice and
+multiplied by the factor $2^{LZC}$.  A precomputed lookup table is used to
+select the factor corresponding to $2^{LZC}$ using \gls{lzc} as input. In next
+cycle, the upper 25 bits ($op_{up}$) of $op$ are selected and introduced into
+the \gls{dsp}-Slice. $op_{up}$ is shifted by a constant amount of 17 bits (this
+can be done internally by the \gls{dsp}-Slice) and then also multiplied by the
+factor $2^{LZC}$. The accumulator then adds the two shifted operands $op_{low}$
+and $op_{up}$ together which results in a shifted value of $op$ by \gls{lzc}
+bits to the right. All these operations can be done by using only one
+\gls{dsp}-Slice. Figure \ref{fig:arch_step_scale} shows the necessary
+schematics. As described in section \ref{ch:design_arch}, also the simplified
+representation of the memory queue has been replaced with two memory blocks.
 
 \begin{figure}
     \centering
@@ -1795,7 +1878,7 @@ first register stores the new \gls{lzc} value and the second register holds the 
 \gls{lzc} value. The output register is only updated with the new value if the new
 value is smaller than the one already stored in the output register.
 
-To further increase the precision, the stored values $\pi$, $B$ and $TP$ can be
+To further increase the precision, the stored values $\pi$, $B$ and $Q$ can be
 preprocessed and scaled. Also here, the element with the lowest number of
 leading zeros decides the scaling factor.
 
@@ -1817,45 +1900,45 @@ flow is available (which is usually the case for \glspl{gpp}). Sizes of fast
 caches are quite small and are only useful if data is frequently reused. In the
 present case however such a memory hierarchy would be very bad because of the
 high velocity of data. The algorithm at hand always requires the complete
-matrix $TP$ which is of size $N^2$ to compute the next forward variable. The
+matrix $Q$ which is of size $N^2$ to compute the next forward variable. The
 same is true for the vectors $\pi$ and $B(o_k)$. In case of a memory hierarchy
 this implies, that either the cache is big enough, or there will always be
-cache misses. In such chases it is much more beneficial to build a scratch pad
+cache misses. In such cases it is much more beneficial to build a scratch pad
 memory architecture: In this type of architecture, the hierarchy is very flat
 and one aims to design blocks of memory of appropriate size to store the
 necessary data. In \glspl{fpga} such block ram is internally available. This
-has been used to store teh values of $\pi$, $TP$ and $B$. In case of the
-extension, instead of $TP$ the \gls{cdf} parameters are stored. The $\pi$ and
-$TP$/\gls{cdf} parameter values can be stored once and for all (they never
-change).
+has been used to store the values of $\pi$, $Q$ and $B$. In case of the
+extension, instead of $Q$ the \gls{cdf} parameters and the values of $P$ are
+stored. The $\pi$, $Q$/(\gls{cdf} and $P$) parameter values can be stored once
+and for all (they never change).
 
 $B$ changes depending on the arriving event. There are usually to much
-different events ($M=1000$) to store all the complete matrix $B$ inside the
+different events ($M=1000$) to store all possible $B$ matrices inside the
 \gls{fpga}. A two staged pipeline is necessary to keep the throughput at
 a maximum level. In case of the extension this top level pipeline already
 exist. In the first stage of the pipeline, a memory controller reads from an
 external memory the $B$ values corresponding to the actual event and stores
 them into the internal buffer. This buffer is of the type \gls{fifo}. This
-needs to be done for every active prediction model (cf.  figure
+needs to be done for every active prediction model (cf figure
 \ref{fig:arch_top})
 
 The events do not arrive in a regular interval. They may arrive very fast one
-after each other and there my be time intervals where no event arrives. No hard
-real time constraints for the prediction system exist: There is no impact on
-the prediction quality, if the latency from the time an event arrives until the
-likelihood is computed differs depending on the load of the system. This can be
-used to even out the event stream by introducing a \gls{fifo} queue where the
-events are stored until the system is able to compute the corresponding
-likelihood. This buffer needs to be designed in order to be able to collect
-events when the accelerator is used to full capacity and events are arriving
-faster than the accelerator can handle. Ideally, the buffer should never be
-empty and never full. A buffer that is always empty, indicates that the
-performance of the accelerator is is to high. The frequency of the accelerator
-can be lowered in order to save more energy. If the buffer gets filled up, it
-becomes problematic, because new events cannot be stored and are lost. If the
-average frequency of the arriving events is lower than the maximal throughput
-the buffer is designed to small.  If the frequency is higher, the performance
-of the accelerator is insufficient.
+after each other and there may be time intervals where no event arrives. No
+hard real time constraints for the prediction system exist: There is no impact
+on the prediction quality, if the latency from the time an event arrives, until
+the likelihood is computed differs by small amounts. This can be used to even
+out the event stream by introducing a \gls{fifo} queue where the events are
+stored until the system is able to compute the corresponding likelihood. This
+buffer needs to be designed in order to be able to collect events when the
+accelerator is used to full capacity and events are arriving faster than the
+accelerator can handle. Ideally, the buffer should never be empty and never
+full. A buffer that is always empty, indicates that the performance of the
+accelerator is is to high. The frequency of the accelerator can be lowered in
+order to save more energy. If the buffer gets filled up, it becomes
+problematic, because new events cannot be stored and are lost. If the average
+frequency of the arriving events is lower than the maximal throughput the
+buffer is designed to small. If the frequency is higher, the performance of the
+accelerator is insufficient.
 
 As already mentioned in chapter \ref{ch:design_arch}, intermediate vectors
 $\alpha_k$ need to be stored in memory, as each value is used multiple times to
@@ -1875,17 +1958,18 @@ overhead.
 
 While the reduction of storage overhead is a key aspect of sparse matrix
 storage techniques, another aspect must be considered. In order to not
-interrupt the pipeline in the proposed design of the accelerator, $\alpha$
+interrupt the pipeline of the proposed design of the accelerator, $\alpha$
 vector components corresponding to zero-values in the transition probability
-matrix need to be skipped. In order to do that, the address must be increased
-to the next corresponding non-zero $TP$ value. This can only be achieved in a
-fast way, if the number of consecutive zero positions is directly obtainable
-by reading the sparse matrix storage. Considering this and using the results of
-the work presented in \cite{FCCM12_Kestur}, the best option is to use the
-\gls{cbv} or the \gls{cvbv} technique. The final choice falls on the \gls{cbv}
-technique because the \gls{cvbv} technique increases the complexity of memory
-controller with the sole benefit of only small storage overhead reduction. 
-Sparse matrix storage techniques are no further discussed in this thesis.
+matrix need to be skipped. In order to do that, the address of the $\alpha$
+vector memory must be increased to the next corresponding non-zero $Q$ value.
+This can only be achieved in a fast way, if the number of consecutive zero
+positions is directly obtainable by reading the sparse matrix storage.
+Considering this and using the results of the work presented in
+\cite{FCCM12_Kestur}, the best option is to use the \gls{cbv} or the \gls{cvbv}
+technique. The final choice falls on the \gls{cbv} technique because the
+\gls{cvbv} technique increases the complexity of memory controller with the
+sole benefit of only small storage overhead reduction.  Sparse matrix storage
+techniques are no further discussed in this thesis.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -1925,81 +2009,12 @@ Sparse matrix storage techniques are no further discussed in this thesis.
 %    \label{tab:ctrl}
 %\end{table}
 
-\begin{table}
-    \footnotesize
-    \begin{center}
-    \begin{tabular}{|c|l|*{10}{c|}}
-    \hline
-    type & signal                      & init & select & macc & conciliate & shift1 & shift2 & mul & store & flush & input       \\
-    \hline
-    \hline
-         & pi\_we                      &      &        &      &            &        &        &      &      &       & input       \\
-         & tp\_we                      &      &        &      &            &        &        &      &      &       & input       \\
-         & b\_we                       &      &        &      &            &        &        &      &      &       & input       \\
-         & data\_ready                 &      &        &      &            &        &        &      &      &       & input       \\
-    1    & enable\_count               & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     & pi\_we      \\
-    2    & enable\_ctrl                & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
-    3    & enable\_init                & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     & data\_ready \\
-    3    & enable\_init\_mul           & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     & data\_ready \\
-    4    & enable\_step                & 0    & 0      & 1    & 1          & 1      & 1      & 1    & 0    & 0     & data\_ready \\
-    4    & enable\_step\_macc          & 0    & 0      & 1    & 1          & 1      & 1      & 1    & 0    & 0     & data\_ready \\
-    5    & enable\_final               & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
-    4    & laod\_op2                   & 0    & 0      & 1    & 1          & 1      & 1      & 1    & 0    & 0     & data\_ready \\
-    6    & load\_step\_alpha           & 0    & 0      & 1    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
-    7    & load\_final\_alpha          & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
-    8    & load\_scale\_new            & 0    & 1(d)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
-    9    & load\_scale\_acc            & 0    & 1      & 0    & 0          & o      & 0      & 0    & 0    & 0     &             \\
-    7    & store\_init\_scale\_new     & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
-    23   & store\_init\_scale\_small   &      & 1(d)   &      &            &        &        &      &      &       & or internal \\
-    9    & store\_init\_scale\_ok      & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
-    7    & store\_step\_alpha          & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
-    7    & store\_step\_scale\_new     & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
-    23   & store\_step\_scale\_small   &      & 1(d)   &      &            &        &        &      &      &       & or internal \\
-    9    & store\_step\_scale\_ok      & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
-    5    & store\_final\_ps            & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
-    10   & store\_final\_ps\_delayed   & 0    & 1(d)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
-    10   & store\_final\_scale         & 0    & 1(d)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
-    11   & shift\_step\_acc            & 0    & 0      & 0    & 1(6)       & 0      & 0      & 0    & 0    & 0     &             \\
-    12   & sel\_mux2\_op2              & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     &             \\
-    13   & sel\_step\_read\_fifo       &      & (*)    &      &            &        &        &      &      &       & special     \\
-    12   & sel\_step\_op1              & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     &             \\
-    14   &                             & 0    & 0      & 0    & 1          & 1      & 0      & 0    & 0    & 0     &             \\
-    15   &                             & 0    & 0      & 0    & 1          & 0      & 1      & 0    & 0    & 0     &             \\
-    16   & sel\_step\_op2              & 0    & 0      & 0    & 1(5)       & 1      & 1      & 0    & 0    & 0     &             \\
-    17   & flush\_init                 & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1     &             \\
-    17   & flush\_step\_macc           & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1     &             \\
-    18   & flush\_step\_acc            & 0    & 0      & 0    & 0          & 0      & 1      & 0    & 0    & 0     &             \\
-    9    & flush\_step\_fifo           & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
-         & reset\_n                    & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & input       \\
-    19   & reset\_count\_n             & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    19   & reset\_op2\_n               & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    19   & reset\_ctrl\_n              & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    19   & reset\_init\_n              & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    20   & reset\_init\_mul\_n         & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1(n)  & reset\_n    \\
-    19   & reset\_step\_n              & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    20   & reset\_step\_macc\_n        & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1(n)  & reset\_n    \\
-    21   & reset\_step\_fifo0          & 0    & 1(*(n))& 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset       \\
-    22   & reset\_step\_fifo1          & 0    & 1(*)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset       \\
-    19   & reset\_step\_scale\_new\_n  & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    19   & reset\_step\_scale\_small\_n& 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    19   & reset\_step\_scale\_ok\_n   & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    19   & reset\_init\_scale\_new\_n  & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    19   & reset\_init\_scale\_small\_n& 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    19   & reset\_init\_scale\_ok\_n   & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    19   & reset\_final\_n             & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
-    \hline
-    \end{tabular}
-    \end{center}
-    \caption{detailed control signals}
-    \label{tab:ctrl_detailed}
-\end{table}
-
 %-------------------------------------------------------------------------------
 %===============================================================================
 \section{Implementation and Testing}
 
 The implementation of the algorithm has been done, following the bottom up
-approach: Each functional block as been testes separately, using test scrips
+approach: Each functional block has been tested separately, using test scrips
 and the iSimi\footnote{http://www.xilinx.com/tools/isim.htm} simulator of the
 Xilinx
 ISE\footnote{http://www.xilinx.com/products/design-tools/ise-design-suite/}
@@ -2012,21 +2027,27 @@ controller.
     \label{fig:test_ctrl}
 \end{figure}
 
-The implementation as been kept as generic as possible with only
-one configuration package that allows to set the values $N$, $L$ and $M$ as well
-as the operand widths. This generic options have however no impact on the
-blocks automatically generated by the Xilinx CORE Generator
+The implementation as been kept as generic as possible with only one
+configuration package that allows to set the values $N$, $L$ and $M$ as well as
+the operand widths. This generic options have however no impact on the blocks
+automatically generated by the Xilinx CORE Generator
 tool\footnote{http://www.xilinx.com/tools/coregen.htm}. These need to be
 generated again if parameters in the configuration package are changed.
 
 A big issue going from simulation to a real implementation on a physical
 \gls{hw} board, are the timing constraints. In order to operate at a specific
 frequency, the longest critical path is not allowed to be longer than the
-period.  Synthesizer options like "register balancing" may help to reduce the
-critical path, but often there is no way around adding additional registers
-(and increase the pipeline length and hence the latency) or manually placing
-critical components in closer proximity to each other. Optimizations for higher
-frequencies have not been done. The goal was to run the accelerator at 100MHz.
+period of the clock. Synthesizer options like "register balancing" may help to
+reduce the critical path, but often there is no way around adding additional
+registers (and increase the pipeline length and hence the latency) or manually
+placing critical components in closer proximity to each other. Optimizations
+for higher frequencies have not been done.
+
+The Xilinx CORE Generator has a bug with block \gls{ram} generation in case
+of a initialisation of the \gls{ram} with a coe file. Address 0 always returns
+undefined. This is only a problem in case of initialisation of the \gls{ram}
+with values. In a real application where the \gls{ram} initialised with values
+read from a non-volatile memory, this bug has no impact.
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2100,7 +2121,76 @@ node can still be beneficial.
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{some material}
+\chapter{Control Signals}
+
+\begin{table}
+    \footnotesize
+    \begin{center}
+    \begin{tabular}{|c|l|*{10}{c|}}
+    \hline
+    type & signal                      & init & select & macc & conciliate & shift1 & shift2 & mul & store & flush & input       \\
+    \hline
+    \hline
+         & pi\_we                      &      &        &      &            &        &        &      &      &       & input       \\
+         & tp\_we                      &      &        &      &            &        &        &      &      &       & input       \\
+         & b\_we                       &      &        &      &            &        &        &      &      &       & input       \\
+         & data\_ready                 &      &        &      &            &        &        &      &      &       & input       \\
+    1    & enable\_count               & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     & pi\_we      \\
+    2    & enable\_ctrl                & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
+    3    & enable\_init                & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     & data\_ready \\
+    3    & enable\_init\_mul           & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     & data\_ready \\
+    4    & enable\_step                & 0    & 0      & 1    & 1          & 1      & 1      & 1    & 0    & 0     & data\_ready \\
+    4    & enable\_step\_macc          & 0    & 0      & 1    & 1          & 1      & 1      & 1    & 0    & 0     & data\_ready \\
+    5    & enable\_final               & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
+    4    & laod\_op2                   & 0    & 0      & 1    & 1          & 1      & 1      & 1    & 0    & 0     & data\_ready \\
+    6    & load\_step\_alpha           & 0    & 0      & 1    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
+    7    & load\_final\_alpha          & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
+    8    & load\_scale\_new            & 0    & 1(d)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
+    9    & load\_scale\_acc            & 0    & 1      & 0    & 0          & o      & 0      & 0    & 0    & 0     &             \\
+    7    & store\_init\_scale\_new     & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
+    23   & store\_init\_scale\_small   &      & 1(d)   &      &            &        &        &      &      &       & or internal \\
+    9    & store\_init\_scale\_ok      & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
+    7    & store\_step\_alpha          & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
+    7    & store\_step\_scale\_new     & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 1    & 0     &             \\
+    23   & store\_step\_scale\_small   &      & 1(d)   &      &            &        &        &      &      &       & or internal \\
+    9    & store\_step\_scale\_ok      & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
+    5    & store\_final\_ps            & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
+    10   & store\_final\_ps\_delayed   & 0    & 1(d)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
+    10   & store\_final\_scale         & 0    & 1(d)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     & data\_ready \\
+    11   & shift\_step\_acc            & 0    & 0      & 0    & 1(6)       & 0      & 0      & 0    & 0    & 0     &             \\
+    12   & sel\_mux2\_op2              & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     &             \\
+    13   & sel\_step\_read\_fifo       &      & (*)    &      &            &        &        &      &      &       & special     \\
+    12   & sel\_step\_op1              & 0    & 0      & 0    & 0          & 0      & 0      & 1    & 0    & 0     &             \\
+    14   &                             & 0    & 0      & 0    & 1          & 1      & 0      & 0    & 0    & 0     &             \\
+    15   &                             & 0    & 0      & 0    & 1          & 0      & 1      & 0    & 0    & 0     &             \\
+    16   & sel\_step\_op2              & 0    & 0      & 0    & 1(5)       & 1      & 1      & 0    & 0    & 0     &             \\
+    17   & flush\_init                 & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1     &             \\
+    17   & flush\_step\_macc           & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1     &             \\
+    18   & flush\_step\_acc            & 0    & 0      & 0    & 0          & 0      & 1      & 0    & 0    & 0     &             \\
+    9    & flush\_step\_fifo           & 0    & 1      & 0    & 0          & 0      & 0      & 0    & 0    & 0     &             \\
+         & reset\_n                    & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & input       \\
+    19   & reset\_count\_n             & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_op2\_n               & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_ctrl\_n              & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_init\_n              & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    20   & reset\_init\_mul\_n         & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1(n)  & reset\_n    \\
+    19   & reset\_step\_n              & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    20   & reset\_step\_macc\_n        & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 1(n)  & reset\_n    \\
+    21   & reset\_step\_fifo0          & 0    & 1(*(n))& 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset       \\
+    22   & reset\_step\_fifo1          & 0    & 1(*)   & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset       \\
+    19   & reset\_step\_scale\_new\_n  & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_step\_scale\_small\_n& 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_step\_scale\_ok\_n   & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_init\_scale\_new\_n  & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_init\_scale\_small\_n& 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_init\_scale\_ok\_n   & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    19   & reset\_final\_n             & 0    & 0      & 0    & 0          & 0      & 0      & 0    & 0    & 0     & reset\_n    \\
+    \hline
+    \end{tabular}
+    \end{center}
+    \caption{detailed control signals}
+    \label{tab:ctrl_detailed}
+\end{table}
 %\section{it's over\dots}
 
 \backmatter
