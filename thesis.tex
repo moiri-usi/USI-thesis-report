@@ -51,8 +51,8 @@ morecomment=[l]{//s},
     \advisor{Prof.}{Miroslaw}{Malek} %compulsory
     %\coadvisor{Prof.}{Student's}{Co-Advisor}{} %optional
 \end{committee}
-\Day{29.} %compulsory
-\Month{Janaury} %compulsory
+\Day{7.} %compulsory
+\Month{July} %compulsory
 \Year{2014} %compulsory, put only the year
 \place{Lugano} %compulsory
 
@@ -84,7 +84,7 @@ morecomment=[l]{//s},
 \tableofcontents 
 \listoffigures %optional
 \listoftables %optional
-\lstlistoflistings
+%\lstlistoflistings
 
 \mainmatter
 
@@ -94,36 +94,38 @@ morecomment=[l]{//s},
 \label{ch:intro}
 \glsresetall % reset acronyms
 
-In today's live it becomes increasingly important, that computer systems are
-dependable. The reason being, that computer systems are used more and more in
-areas where the failure of such a system can lead to catastrophic events.
-Banking, public transportation and medical engineering are only a few examples
-of areas, employing large and extremely complex systems. The increasing
-complexity of computer systems has a direct impact on their maintainability and
-testability. It is simply impossible to guarantee that a piece of \gls{sw}
-comes without any faults. On top of that, the same problematic arises with the
-\gls{hw} components which also may contain faulty parts and get increasingly
-prone to failures due to decay of material.
+Nowadays it is increasingly important, that computer systems are dependable.
+Computer systems are used more and more in areas where failure can lead to
+catastrophic events.  Banking, public transportation and medical engineering
+are only a few examples of areas, where large and complex systems are employed.
+The increasing complexity of computer systems has a direct impact on their
+maintainability and testability. It is simply impossible to guarantee that
+a piece of \gls{sw} comes without any faults. On top of that, the same problem
+arises with the \gls{hw} components which may contain faulty parts and get
+increasingly prone to failures due to decay of material.
 
-In the event of a system failure it is of course desirable to fix the system as
-soon as possible, in order to minimize the downtime of the system (maximize the
+In the event of a system failure it is desirable to fix the system as soon as
+possible, in order to minimize the downtime of the system (maximize the
 availability). This can be accomplished by using different types of recovery
-techniques, e.g. check-pointing (create checkpoints to roll back/forward), fail
-over (switch to a redundant system), reboot. All these techniques require
-a certain amount of time to complete the recovery process, time that is very
-valuable. In order to minimize this time, techniques have been developed to
-anticipate upcoming failures. Such a technique is described in
-\cite{salfner08}, which will be the reference work for this thesis.
+techniques, e.g. checkpointing (create checkpoints to roll back/forward),
+failover (switch to a redundant system), reboot. All these techniques require
+a certain amount of time to complete the recovery process. This time is very
+valuable, as during the recovery the system is down and cannot provide the
+required service. In order to minimize this time, techniques have been
+developed to anticipate upcoming failures. The survey \cite{ACM10_Salfner}
+categorizes and describes several proposed failure prediction techniques. One
+specific technique will be the reference work for this thesis and is described
+in \cite{salfner08}.
 
-The work \cite{salfner08} presents an algorithm to predict failures and
-compares the results with other techniques. The accuracy of the presented
-algorithm to predict failures proves to be better compared to the other
-techniques, has however the drawback of increased complexity and hence
-increased computation time. It is very important to keep the computation
-overhead low in order to maximize the time between the prediction of a failure
-and the actual event of the failure. One way to decrease the computation time
-is to design a \gls{hw} accelerator for the prediction algorithm. The design of
-such an accelerator is outlined in this document.
+The accuracy of the proposed algorithm to predict failures in
+\cite{salfner08} proves to be better compared to the other techniques
+\cite{lin88, ICDM02_Vilalta, domeniconi02}. However, it has the drawback of
+increased complexity and hence increased computation time. It is very important
+to keep the computation overhead low in order to maximize the time between the
+prediction of a failure and the actual event of the failure. One way to
+decrease the computation time is to design a \gls{hw} accelerator for the
+prediction algorithm. The design of such an accelerator is outlined in this
+thesis.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -131,65 +133,70 @@ such an accelerator is outlined in this document.
 \label{ch:_intro_prob}
 
 The main idea of the prediction model proposed in the reference work
-\cite{salfner08}, is to predict failures, based on sequences of events and
-their time of arrival. This is modeled with a \gls{hsmm}. A detailed
-description can be found in the reference work, but the fundamental concept is
-also described in this thesis (chapter \ref{ch:event}). In order to perform
-a prediction, three parts are required: the training of the model, the sequence
-processing and the classification. The training of the model uses collected
-error event data samples and corresponding oracle predictions (collected from
-known failures) to train the features (parameters) of the model in order to be
-able to detect similar sequences as the ones that led to failures in previous
-cases. The training of the model is not time critical and is performed
-off-line. The trained features are then used in the second part, the sequence
-processing. This is time critical as it happens on-line on a live system. The
-system will continuously send error events to the sequence processing unit,
-which needs to compute a likelihood of the sequence of the last $L$ events.
-This likelihood is sent to a classifier where it is compared to a non-failure
-likelihood. The classifier then predicts if the sequence at hand will lead to
-a failure in the near future.
+\cite{salfner08}, is to predict failures based on sequences of events with
+their time of occurrence. This is modeled with a \gls{hsmm}. The fundamental
+concept is described in chapter \ref{ch:event}. A detailed description can be
+found in Chapter \cite{salfner08}. In order to perform a prediction, three
+parts are required: the training of the model, the sequence processing and the
+classification. The training of the model uses collected error event data
+samples and corresponding oracle predictions (collected from known failures) to
+train the parameters of the model. The training of the model is not time
+critical and is performed off-line (not on a live system). The trained model is
+then able to detect similar sequences as the ones that led to failures in
+previous cases. This is the second part, the sequence processing. This part is
+time critical as it happens on-line on a live system. The system will
+continuously send error events to the sequence processing unit, which needs to
+compute a likelihood of the sequence of the last $L$ events. This likelihood
+describes the probability of the observed sequence to be similar to one, that
+led to a failure in previous cases. It is sent to a classifier where it is
+compared to a non-failure sequence likelihood. The classifier then predicts if
+the sequence at hand will lead to a failure in the near future.
 
 The failure prediction method, as it was outlined in very few words above and
-discussed in \cite{salfner08}, leads to very good prediction results (F-measure
-of up to 0.66. See chapter \ref{ch:event} for more information). This comes at
-the price of high computational efforts that are necessary to perform the
-sequence processing. This may lead to the situation that a failure is correctly
-predicted, but the result of the prediction is only available after the failure
-has already happened. This would of course rend the prediction useless. The
-main goal of this thesis, aims to accelerate the sequence processing part in
-order to predict a failure before it really happens. To do so, first available
-parallelism and an appropriate accelerator architecture must be found. Then the
-accelerator must be designed and implemented, using the knowledge gained from
-the analysis. Finally the acceleration design must be compared to a serial
-implementation and the speedup and accuracy must be computed.
+discussed in \cite{salfner08}, leads to very good prediction results (cf
+Chapter \ref{ch:event} for more information). This comes at the price of high
+computational efforts that are necessary to perform the sequence processing.
+This may lead to situations where a failure is correctly predicted, but the
+result of the prediction is only available after the failure has already
+occurred. This would rend the prediction useless. The main goal of this thesis,
+is to accelerate the sequence processing part in order to predict a failure
+before it happens. The acceleration will be achieved by running the prediction
+algorithm on specialized \gls{hw}. A common acceleration method, is to split
+the algorithm in multiple parts and run each part in parallel on separate
+computational units. To do so, first available parallelism and an appropriate
+accelerator architecture must be found. Then the accelerator must be designed
+and implemented, based on the analysis. Finally the acceleration design must
+be compared to a serial implementation and the speedup and accuracy must be
+computed.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
 \section{Motivation}
 \label{ch:intro_mot}
 
-As already outlined before, it becomes increasingly important to provide
-dependable infrastructure for information systems. Failure prediction is a very
-hot research topic with a main focus on server infrastructure. With the recent
-trend of moving everything to the cloud, one may question the usefulness of
-failure prediction of single nodes. Rather than focusing on single machines it
-may prove beneficial to only consider on the interaction of nodes and predict
-failures on a bigger scale. Why then designing a accelerator for a prediction
-model that targets single server systems?
+As outlined before, it becomes increasingly important to provide dependable
+infrastructure for information systems. Failure prediction is a very hot
+research topic with a main focus on server infrastructure. The proposed
+prediction algorithm targets single server nodes. With the recent trend of
+moving everything to the cloud, one may question the usefulness of failure
+prediction of single nodes. Rather than focusing on single machines it may
+prove beneficial to only consider the interaction of nodes and predict failures
+on a bigger scale. Why then designing a accelerator for a prediction model that
+targets single server systems?
 
 Despite the trend of moving to the cloud, there are still thousands of single
-node systems that have a huge impact on a vast amount of people and failures
+node systems that have a huge impact on a vast amount of people where failures
 would prove to be catastrophic. The talk is about embedded systems. Embedded
 systems are everywhere and the number is increasing. While server farms are
 growing, there is also the trend of specializing information systems. With the
 advances of computer \gls{hw}, performance is available with less space and
-energy requirements and hence machines are getting more intelligent with the
-increasing trend to embed powerful systems. Transportation (trains, planes,
-cars) is a prime example of dependable embedded systems. Huge efforts have been
-made to make fully autonomous transportation systems failure prone (e.g. bullet
-train in Japan) by adding redundant recourses. Accurate failure prediction
-systems may be a key to reduce these recourses or to increase the
-dependability.
+energy requirements and hence machines (e.g. industrial devices,
+transportation, surveillance) are getting more intelligent with the increasing
+trend to embed powerful systems. Transportation (trains, planes, cars) is
+a prime example of dependable embedded systems. Huge efforts have been made to
+make fully autonomous transportation systems failure prone (e.g. bullet train
+in Japan) by adding redundant recourses. Accurate failure prediction systems
+may be a key to reduce these recourses or to increase the dependability.
 
 Another issue with the proposed failure prediction method is the high amount of
 parameters that need to be identified, estimated and set. Even if this initial
@@ -203,10 +210,10 @@ configuration only once during design time. Another aspect is the specific
 application domain of embedded systems. They are designed for very specific
 functions and offer a better insight in process properties than this is the
 case with complex \gls{sw} architectures on server systems. A parametrization
-of the failure prediction system for an embedded system, will in general prove
+of the failure prediction system for an embedded system will in general prove
 to be easier than for server systems.
 
-These are the reason why this work presents an acceleration for the failure
+These are the reasons why this work presents an acceleration for the failure
 prediction method proposed by \cite{salfner08}. The accelerator will be designed
 with special attention on low resource and energy requirements, as the main
 targets are single node embedded systems for industrial applications.
@@ -219,14 +226,14 @@ targets are single node embedded systems for industrial applications.
 This section gives an overview of the structure of the thesis. Chapter
 \ref{ch:art} presents existing work, done in the aria of failure prediction and
 acceleration of related algorithms. Chapter \ref{ch:event} provides a short
-summary of the prediction model to be accelerated and presents the results
+overview of the prediction model to be accelerated and presents the results
 obtained by using the prediction model in a real case scenario. This is
 discussed in detail in the reference work \cite{salfner08}. Chapter
 \ref{ch:analysis} focuses on the sequence prediction algorithm and provides an
-analysis of available parallelism. In chapter \ref{ch:design} a design of an
+analysis of available parallelism. In chapter \ref{ch:design} the design of an
 accelerator is proposed and in chapter \ref{ch:results} results in terms of
 speedup and accuracy are presented. Chapter \ref{ch:conc} concludes the work
-by presenting the contributions and outlines possible future work related to
+by presenting the contributions and outlining possible future work related to
 the thesis.
 
 %===============================================================================
@@ -687,11 +694,13 @@ which is then multiplied element-wise with the vector $ B(o_k) $. The equation
 the last step the likelihood is computed, by summing up all elements of the
 last forward variable $ \alpha_L $ (cf equation \ref{eq:P}).
 
-\lstinputlisting[language=Octave,
-    caption=Forward Algorithm,
-    float,
-    label=list:forward_basic]
-    {../accelerator/model/forward_s_basic.m}
+\begin{figure}
+    \centering
+    \lstinputlisting[language=Octave]
+        {../accelerator/model/forward_s_basic.m}
+    \caption{Forward Algorithm}
+    \label{list:forward_basic}
+\end{figure}
 
 As proposed by the reference work, the forward variables can be scaled, in
 order to prevent the result from getting very small due to the continuous
@@ -2113,6 +2122,7 @@ node can still be beneficial.
     \item implementation of the extension
     \item fixed-point design and implementation of the extension
     \item real case application implementation with proper memory interface
+    \item replace $\alpha$ vector \glspl{fifo} with \gls{ram} blocks
 \end{itemize}
 
 \nocite{*}
