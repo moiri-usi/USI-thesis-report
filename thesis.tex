@@ -82,7 +82,7 @@ morecomment=[l]{//s},
     a failure prediction algorithm. The algorithm is based on the processing of
     error event sequences, modeled with a \acrfull{hsmm}. The sequence
     processing is based on the forward algorithm. The design and implementation
-    of the forward algorithm is provided in a fixed point data representation
+    of the forward algorithm is provided in a fixed-point data representation
     and proposes a simple operand scaling method with a low overhead. The
     design focuses on low resource utilisation and energy consumption. The
     accelerator outperforms conventional processors by a factor of up to 48.85.
@@ -321,7 +321,7 @@ algorithm from the HMMER library\footnote{http://hmmer.janelia.org/} using
 \glspl{gpu}.
 
 Focusing on a more general approach for acceleration, \cite{ARITH13_Kadric}
-proposes an \gls{fpga} implementation of a parallel floating point accumulation,
+proposes an \gls{fpga} implementation of a parallel floating-point accumulation,
 and \cite{ITNG07_Yang} describes the implementation of a vector processor on
 \gls{fpga}.
 
@@ -1059,7 +1059,7 @@ $k$, on average a scaling factor of $\frac{1}{M}$ is necessary in each step
 $k$. If the intermediate precision of the computational units is high enough to
 compensate for scaling too much or too few, this method is an easy solution to
 keep the values in an acceptable range. However, if the precision is not
-available (eg. if a fixed point data representation is chosen) a fixed scaling
+available (eg. if a fixed-point data representation is chosen) a fixed scaling
 factor can cause an overflow (very bad because the result will be wrong) or an
 underflow (may be acceptable because it is only a loss of precision). In this
 case, rather than choosing an average scaling factor of $\frac{1}{M}$ it is
@@ -1071,23 +1071,23 @@ This is either acceptable because of a high precision, or another scaling
 factor must be computed to prevent this. The implemented solution will be
 explained in detail in Chapter \ref{ch:design}.
 
-Another aspect to consider is the choice of data representation (floating point
-versus fixed point). This depends the on one hand on the necessary precision
+Another aspect to consider is the choice of data representation (floating-point
+versus fixed-point). This depends the on one hand on the necessary precision
 and on the other hand on the choice of accelerator type. While general purpose
 \gls{hw} such as a \gls{cpu}, \gls{gpu} or \gls{dsp} (to some degree) offer an
 abstraction to make the representation type transparent to the developer,
 specialized \gls{hw} such as a \gls{fpga} or \gls{asic} offer no such
-abstraction. For the latter devices, floating point operations increase the
+abstraction. For the latter devices, floating-point operations increase the
 complexity of the \gls{hw} design and the necessary \gls{hw} resources
 considerably. In terms of performance, general purpose devices also benefit
-from a sparse usage of floating point values. The complexity of the \gls{sw}
+from a sparse usage of floating-point values. The complexity of the \gls{sw}
 development of general purpose devices however is only marginally or not
 affected at all by the choice of data representation.
 
-If by choice, scaling is omitted, a fixed point representation will not be
+If by choice, scaling is omitted, a fixed-point representation will not be
 possible due to the rapid convergence towards zero by continuously multiplying
 probabilities. This implies that by omitting scaling to save resources,
-a floating point representation must be used. This in turn increases the
+a floating-point representation must be used. This in turn increases the
 resource requirements or has a negative impact on performance (or both).
 
 The trade-off between the choice of using scaling or not versus the choice of
@@ -1444,7 +1444,7 @@ the following list and the observations discussed in the previous sections.
         implement any kind of function in a fast, easy and maintainable fashion
         with no requirements in \gls{hw} knowledge. Operations like division,
         exponential function, and logarithm are available as well as the
-        floating point number representation. All operations can be executed
+        floating-point number representation. All operations can be executed
         with very high precision and at high clock frequencies (up to 3 GHz).
         \glspl{cpu} come with the drawback of a high power consumption, limited
         parallelization options (small number of cores), and a fixed \gls{hw}
@@ -1459,7 +1459,7 @@ the following list and the observations discussed in the previous sections.
         very flexible in terms of \gls{sw} interpretation. However it requires
         some \gls{hw} understanding in order to use the parallel power in an
         optimal way. A \gls{gpu} offers operations like division, exp, and log
-        functions and provides floating point number representation.
+        functions and provides floating-point number representation.
         \glspl{gpu} can work with high precision and at high clock frequencies.
         The power consumption of a \gls{gpu} is very high due to the high
         frequencies and the streaming processors. While the \gls{hw}
@@ -1477,7 +1477,7 @@ the following list and the observations discussed in the previous sections.
         This causes some overhead as an instruction pipeline is necessary. The
         overhead is a lot smaller than in the case of \glspl{cpu} because of
         specific instructions sets (this comes with a loss of flexibility).
-        Fixed point as well as floating point devices exist with various
+        Fixed-point as well as floating-point devices exist with various
         precisions. A \gls{dsp} provides a lot of specific computation power
         for a low price.
     \item[\acrshort{fpga}] \hfill \\
@@ -1500,7 +1500,7 @@ the following list and the observations discussed in the previous sections.
         a \gls{hw} solution of a function, the "low" clock frequency of up to
         500MHz (this is low compared to \glspl{cpu} or \glspl{gpu}), and the
         absence of division, exponential and logarithm functions. All units are
-        optimized for fixed point representation, and floating point numbers
+        optimized for fixed-point representation, and floating-point numbers
         must be implemented manually. Core generators and very powerful
         synthesis tools try to amend these drawbacks, but still deep
         knowledge of \gls{hw} is necessary to successfully implement a function
@@ -1549,17 +1549,17 @@ power requirements. \glspl{gpu} are a far better option than \glspl{cpu} but
 are not ideal because of the fixed memory interface. \glspl{dsp} would be the
 device of choice if only the basic forward algorithm is considered. Due to the
 high performance at a low cost of \glspl{dsp} and the fact that the basic
-forward algorithm mainly uses \gls{macc} operations, one or multiple floating
-point \gls{dsp} devices could be used to efficiently implement the algorithm.
-In case of the extended algorithm a \gls{dsp} device causes too much of an
-overhead to compute the \gls{cdf} and will be the bottleneck of the design. For
-this reason a more flexible device must be chosen. The most flexible
-architecture is an \gls{asic}. \glspl{asic} are very expensive in terms of
-money and development time, two resources that were not available for this
-thesis. This leaves the \gls{fpga}: An \gls{fpga} combines the parallel power
-of \glspl{dsp} for \gls{macc} operations but adds the possibility to design
-a specific \gls{hw} architecture to compute the transition probabilities needed
-for the extension. While the performance will not be at a level of an
+forward algorithm mainly uses \gls{macc} operations, one or multiple
+floating-point \gls{dsp} devices could be used to efficiently implement the
+algorithm.  In case of the extended algorithm a \gls{dsp} device causes too
+much of an overhead to compute the \gls{cdf} and will be the bottleneck of the
+design. For this reason a more flexible device must be chosen. The most
+flexible architecture is an \gls{asic}. \glspl{asic} are very expensive in
+terms of money and development time, two resources that were not available for
+this thesis. This leaves the \gls{fpga}: An \gls{fpga} combines the parallel
+power of \glspl{dsp} for \gls{macc} operations but adds the possibility to
+design a specific \gls{hw} architecture to compute the transition probabilities
+needed for the extension. While the performance will not be at a level of an
 \gls{asic}, the specialized \gls{hw} will still outperform any other device
 because of the customizable memory interface (even at the lower frequencies of
 \glspl{fpga}).
@@ -1770,17 +1770,17 @@ operation is constant and can be achieved with fixed wiring. The exponential
 the exponential function poses the biggest problem. Fortunately, implementation
 solutions of exponential functions for \glspl{fpga} have been proposed
 (\cite{RSSI08_Pottathuparambil, ICFPT05_Detrey}). These solutions are however
-designs for floating point numbers. Therefore, the division, multiplication,
-comparison, and addition operations must also be done in floating points. It is
+designs for floating-point numbers. Therefore, the division, multiplication,
+comparison, and addition operations must also be done in floating-points. It is
 out of the scope of this thesis to design and/or implement these elements.
 There is however the Xilinx CORE Generator
 tool\footnote{http://www.xilinx.com/tools/coregen.htm} that can build
-a functional blocks performing floating point operations.  Unfortunately there
+a functional blocks performing floating-point operations.  Unfortunately there
 is no support for exponential functions. Another option of solving this problem
 is to use a \gls{lut} storing results of a precomputed exponential function.
 The range of the computed values depends on the trained features of the chosen
 \gls{cdf}. With an interpolation, intermediate values are calculated. The
-benefit of this option is the possibility to go back to a fixed point
+benefit of this option is the possibility to go back to a fixed-point
 representation for all operations. To precompute the complete \gls{cdf} would
 be challenging, due to the fact that for each value in $V$ specific \gls{cdf}
 parameters are required and hence imply an increased memory complexity to the
@@ -1813,7 +1813,7 @@ the latency of each block (lower latency means more resources), the design can
 be optimized for a specific $N$.
 
 This design proposal of the extension is by far not as optimized as the design
-proposed for the forward variable computation. A pure fixed point design
+proposed for the forward variable computation. A pure fixed-point design
 would allow to reduce the resources usage. This would allow to propose
 a reasonable design for the Gaussian \gls{cdf} (a \gls{cdf} which is very
 often used).
@@ -1824,32 +1824,32 @@ often used).
 \label{ch:design_scaling}
 
 The \gls{dsp} slices used to multiply and accumulate operations are designed
-for a fixed point data representation, hence they do not support floating point
+for a fixed-point data representation, hence they do not support floating-point
 operations. This poses no problem if an operand width can be chosen that allows
 to represent the complete spectrum of all possible values an operand can take
 (with respect to a certain precision). The continuous multiplication of
 probabilities, as it is the case with the algorithm at hand, leads to very small
 values very fast, depending on the sequence length $L$. This is the reason why
-a fixed point representation without scaling cannot be used. This can be
-avoided by using floating point numbers with a very large exponent to
+a fixed-point representation without scaling cannot be used. This can be
+avoided by using floating-point numbers with a very large exponent to
 prevent an underflow. In this case, the \gls{dsp} slices need to be extended in
-order to support floating points. In the following this option is discussed and
-then compared to a fixed point solution with scaling.
+order to support floating-points. In the following this option is discussed and
+then compared to a fixed-point solution with scaling.
 
-In order to be able to add floating point numbers, which should be done with the
+In order to be able to add floating-point numbers, which should be done with the
 accumulator of the \gls{dsp} slice, the exponents of the numbers must be equal.
 To achieve that, the difference of the two exponents is calculated, and then the
 mantissa of the number with the lower exponent must be shifted by this
 difference (and possibly rounded/truncated). This process is called
 normalization. After the normalization, the mantissas can be added, and finally
 the resulting value needs to be normalized again. In order to multiply two
-floating point numbers, the mantissas of both numbers are multiplied, and the
+floating-point numbers, the mantissas of both numbers are multiplied, and the
 exponents are added (the sign can be ignored, as probabilities are always
 positive). For the multiplication of the mantissas the \gls{dsp} slices can be
 used. In parallel to this operation, an external adder can add up the
 exponents. The result must then be truncated/rounded and normalized.
 
-The work \cite{FPL13_Brosser} presents a solution for floating point
+The work \cite{FPL13_Brosser} presents a solution for floating-point
 operations, including multiplication and addition, in single
 precision\footnote{IEEE 754-2008} using only one \gls{dsp} slice. For being
 able to omit the scaling completely, the exponent would need to be larger:
@@ -1867,14 +1867,14 @@ throughput: Using the latencies presented in the work, 22 cycles are necessary
 for multiplication and 25 cycles for addition. Using memory to store the
 intermediate results the operations could be pipelined, but without additional
 memory no pipelining is possible. A more optimized solution for the algorithm
-at hand can surely be found, but a more profound analysis of floating point
+at hand can surely be found, but a more profound analysis of floating-point
 operations on \gls{fpga} must be performed to gain more insight. This is
 however beyond the scope of this work, and the present facts are enough to
-first consider a fixed point solution with scaling before heading deeper into
-floating points.
+first consider a fixed-point solution with scaling before heading deeper into
+floating-points.
 
-The documents \cite{smith97, ti04} discuss the choice of fixed point versus
-floating point representation with respect to \gls{dsp} devices. This is also
+The documents \cite{smith97, ti04} discuss the choice of fixed-point versus
+floating-point representation with respect to \gls{dsp} devices. This is also
 applicable for \glspl{fpga}. An important point is the trade-off between speed
 and accuracy. While a fixed-point representation allows to process more data at
 a lower precision, a floating-point representation allows a higher precision at
@@ -1885,18 +1885,18 @@ In video processing precision is less an issue. However the amount of image
 data to be processed in case of a video is much bigger compared to a audio
 stream. By trading speed for more precision, it would make sense to use
 a floating-point representation in case of audio processing. On the other hand
-by trading precision for more speed, a fixed point representation would make
+by trading precision for more speed, a fixed-point representation would make
 sense for video processing. In the application at hand, speed is the most
 important factor in order to process as much error events as possible (the
 speed of the system limits the average occurrence frequency of the
-error-events). Considering this, the choice of a fixed point representation is
+error-events). Considering this, the choice of a fixed-point representation is
 reasonable. Another factor is the design time. Due to the complexity of
 a floating-point data representation, the design time of an application
 operating with floating-points on \gls{fpga} is higher than a fixed-point
 implementation. Due to the limited amount of time available for this theses,
-a fixed-pint implementation is more realistic.
+a fixed-point implementation is more realistic.
 
-The \gls{dsp} slices allow fixed point \gls{macc} operations with an operand of
+The \gls{dsp} slices allow fixed-point \gls{macc} operations with an operand of
 bit width 18 and one of bit width 25. Internally the device works with a bit
 width of 48 bits. This allows a lossless multiplication (43 bits) and an
 accumulation with 5 bits margin for overflow. Due to the properties expressed
@@ -2181,7 +2181,7 @@ algorithm on the accelerator and on a test \gls{cpu}. The results from both
 devices were used to calculate an error (cf. Equation \ref{eq:error}). The
 result of the \gls{cpu} was used as reference value. On the test \gls{cpu} the basic
 algorithm was computed (without scaling) for feasible values of $N$ and $L$.
-The double precision of the floating points is able to compute a likelihood for
+The double precision of the floating-points is able to compute a likelihood for
 $L \leq 106$, assuming $M=1000$.
 
 \begin{equation}
@@ -2292,7 +2292,7 @@ power consumption of the accelerator (estimated consumption of
 expectations.
 
 By analyzing the table in more detail, big jumps in speedup occur whenever $L$
-becomes too big and scaling must also be applied with floating point numbers.
+becomes too big and scaling must also be applied with floating-point numbers.
 Not only scaling is an issue but also the size of data. The bigger $L$ and $N$
 grows, the more likely it becomes that the cache of the \gls{cpu} is too small
 to hold all values. At this point, memory access is necessary which increases
@@ -2412,7 +2412,7 @@ reconsider some points. The former points will be concluded in Section
 \label{ch:conc_ach}
 
 This thesis proposes a novel design of the basic forward algorithm on
-a \gls{fpga}. A fixed point operand representation and a custom operand scaling
+a \gls{fpga}. A fixed-point operand representation and a custom operand scaling
 scheme is presented. These choices allow to keep the required resources at
 a low level and limit the energy consumption. The analysis of reasonable
 parallelization options led to to the choice of a pipelined architecture. The
@@ -2462,9 +2462,9 @@ accelerator as a failure predictor. First and foremost, the extension of the
 forward algorithm needs to be considered. While a design for the extension of
 the algorithm is provided in this thesis, an implementation on \gls{hw} has not
 been done. Due to the complexity of the extension the design is provided using
-floating point blocks. These blocks are not further described in the thesis.
+floating-point blocks. These blocks are not further described in the thesis.
 References on related work or tools to generate corresponding blocks are
-provided. To create a consistent design of the extension, a fixed point design
+provided. To create a consistent design of the extension, a fixed-point design
 should be performed.
 
 The implementation of the accelerator lacks interfaces to peripherals (e.g.
