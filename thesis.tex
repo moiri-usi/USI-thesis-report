@@ -730,15 +730,15 @@ of one set where each variable is computed with the innermost loop. The two
 nested inner loops form the Matrix-Vector-Vector multiplication
 \begin{equation}
     \label{eq:mvv}
-    \alpha_{k+1}(i) = \big(Q \alpha_k\big)(i) \cdot \big(B(o_k)\big)(i) \;\;\;
+    \alpha_{k+1}(i) = \big(Q \alpha_k\big)(i) \cdot \big(B(O_k)\big)(i) \;\;\;
         \forall i \in \{1, \dots, N\}
 \end{equation}
 where $ \alpha_k $ is a vector of size $ N $ of the prior computed $ \alpha
 $ variables, $ Q $ a matrix of size $ N \times N $ containing the transition
-probabilities and $ B(o_k) $ a vector of size $ N $ containing the emission
+probabilities and $ B(O_k) $ a vector of size $ N $ containing the emission
 probabilities of the k-th observation symbol. Note that the first
 multiplication is a Matrix-Vector multiplication that results in a vector
-which is then multiplied element-wise with the vector $ B(o_k) $. The Equation
+which is then multiplied element-wise with the vector $ B(O_k) $. The Equation
 \ref{eq:forward} describes the formal definition of the forward algorithm. In
 the final step the likelihood is computed, by summing up all elements of the
 last forward variable $ \alpha_L $ (cf. Equation \ref{eq:P}).
@@ -1062,7 +1062,7 @@ factor can cause an overflow (very bad because the result will be wrong) or an
 underflow (may be acceptable because it is only a loss of precision). In this
 case, rather than choosing an average scaling factor of $\frac{1}{M}$ it is
 safer to choose the scaling factor to be equal to the maximal possible scaling
-factor of all values of a specific event in $B$ (scale $\max\big(B(O_k)\big)$).
+factor of all values of a specific event in $B$ (scale $\max\big(B(o_j)\big)$).
 By doing this, the scaling factor will be too small and if $L$ is big, the
 forward variables will still approach zero, only slower than without scaling.
 This is either acceptable because of a high precision, or another scaling
@@ -1991,7 +1991,7 @@ caches are quite small and are only useful if data is frequently reused. In the
 present case however such a memory hierarchy would be bad because of the
 high velocity of data. The algorithm at hand always requires the complete
 matrix $Q$, which is of size $N^2$, to compute the next forward variable. The
-same is true for the vectors $\pi$ and $B(o_k)$. In case of a memory hierarchy
+same is true for the vectors $\pi$ and $B(o_j)$. In case of a memory hierarchy
 this implies that either the cache is big enough, or there will always be
 cache misses. In such cases it is much more beneficial to build a scratch pad
 memory architecture: In this type of architecture, the hierarchy is very flat
@@ -2513,44 +2513,44 @@ accuracy:
     \item L: observation sequence length
     \item R: number of \acrshort{cdf} (kernels)
     \item S: number of failure types
+    \item $O_k$: k-th observation element of the observation sequence
+        $O_1, \dots, O_L$
+    \item $o_j$: k-th observation symbol of the set of observation symbols
+        $\boldsymbol{o} = \{o_1, \dots, o_M\}$
+    \item $d_k$: delay of the observation element $O_k$ with respect to the
+        observation element $O_{k-1}$, with $k \in \{1, \dots, L\}$
     \item $ \pi_i $, forming the initial state probability vector
         $ \boldsymbol{\pi} $ of size $ N $
     \item $ b_i(o_j) $, forming the emission probability matrix $ B $ of size
         $ N \times M $
     \item $ p_{ij} $, forming the matrix of limiting transmission probabilities
         $ P $ of size $ N \times N $
-    \item $ \omega_{ij, r} $, the weights of the kernel $ r $, with
-        $i,j \in \{1, \dots, N\} $
-    \item $ \theta_{ij, r} $, the parameters of the kernel $ r $, with
-        $i,j \in \{1, \dots, N\} $
-    \item $v_{ij} $, forming the extended transition probability matrix $V$ of
-        size $N \times N$
-    \item $a_{ij} $, forming the basic transition probability matrix $A$ of size
-        $N \times N$
-    \item $q_{ij}$ forming the transition probability matrix $Q$ of size
-        $N \times N$, addressing both versions (basic and extended)
     \item $d_{ij}(d_k)$, forming the matrix of cumulative transition duration
         distribution functions $D(d_k)$ of size $N \times N$
-    \item $\kappa_{ij}(d_k|\theta_{ij})$ forming the kernel matrix of size
+    \item $v_{ij}(d_k) $, forming the extended transition probability matrix
+        $V$ of size $N \times N$
+    \item $a_{ij} $, forming the basic transition probability matrix $A$ of size
         $N \times N$
+    \item $q_{ij}$, forming the transition probability matrix $Q$ of size
+        $N \times N$, addressing both versions (basic and extended)
+    \item $ \theta_{ij, r} $: the parameters of the kernel $ r $, with
+        $i,j \in \{1, \dots, N\} $
+    \item $ \omega_{ij, r} $: the weights of the kernel $ r $, with
+        $i,j \in \{1, \dots, N\} $
+    \item $\kappa_{ij}(d_k|\theta_{ij})$: the kernel, with
+        $i,j \in \{1, \dots, N\} $
     \item $\alpha_k(i)$: i-th component of the forward variable vector
         $\alpha_k$ with $k \in \{1, \dots, L\}$
-    \item $O_k$: k-th observation element of the observation sequences
-        $O_1, \dots, O_L$
-    \item $o_k$: k-th observation symbol of the set of observation symbols
-        $\{o_1, \dots, o_M\}$
-    \item $d_k$: delay of the observation element $O_k$ with respect to the
-        observation element $O_{k-1}$, with $k \in \{1, \dots, L\}$
     \item $c_k$: scaling coefficient of $\alpha_k$ with $k \in {1, \dots, L}$
-    \item $P_s(\boldsymbol{o}|\lambda)$: likelihood of the \acrshort{hsmm}
     \item $\lambda$: the set of parameters of the \acrshort{hsmm}
+    \item $P_s(\boldsymbol{o}|\lambda)$: likelihood of the \acrshort{hsmm}
     \item $\theta_{th}$: classification threshold
-    \item $ P(c_{\bar{F}}) $: prior of non-failure class
-    \item $ P(c_F) $: prior of failure class
-    \item $ r_{\bar{F}\bar{F}} $: true negative prediction
-    \item $ r_{FF} $: true positive prediction
-    \item $ r_{\bar{F}F} $: false positive prediction
-    \item $ r_{F\bar{F}} $: false negative prediction
+    \item $P(c_{\bar{F}})$: prior of non-failure class
+    \item $P(c_F) $: prior of failure class
+    \item $r_{\bar{F}\bar{F}}$: true negative prediction
+    \item $r_{FF}$: true positive prediction
+    \item $r_{\bar{F}F}$: false positive prediction
+    \item $r_{F\bar{F}}$: false negative prediction
 \end{itemize}
 
 \chapter{Control Signals}
