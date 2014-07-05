@@ -78,9 +78,9 @@ morecomment=[l]{//s},
     perform countermeasures in order to prevent systems from reaching a failure
     state.
 
-    This thesis proposes a \acrlong{hw} accelerator design on \acrfull{fpga}for
+    This thesis proposes an accelerator design on a \acrfull{fpga} for
     a failure prediction algorithm. The algorithm is based on the processing of
-    error event sequences modeled with a \acrfull{hsmm}. The sequence
+    error event sequences, modeled with a \acrfull{hsmm}. The sequence
     processing is based on the forward algorithm. The design and implementation
     of the forward algorithm is provided in a fixed point data representation
     and proposes a simple operand scaling method with a low overhead. The
@@ -175,7 +175,7 @@ critical and is performed off-line (not on a live system). The trained model is
 then able to detect similar sequences as the ones that led to failures in
 previous cases. This is the second part, the sequence processing. This part is
 time critical as it happens on-line on a live system. The system will
-continuously send error events to the sequence processing unit, which needs to
+continuously send error events to the sequence processing unit which needs to
 compute a likelihood of the sequence of the last $L$ events. This likelihood
 describes the probability of the observed sequence to be similar to one that
 led to a failure in previous cases. It is sent to a classifier where it is
@@ -308,14 +308,14 @@ analyze and predict failures of a distributed system
 The main goal of this master thesis is to accelerate an extension of the
 forward algorithm. The forward algorithm is used in the context of \glspl{hmm}.
 It is used to compute the probability of occurrence of a certain sequence,
-given a \gls{hmm}. Proposals for a \gls{gpu} based accelerator for the classic
-forward algorithm are described in \cite{neumann11,liu09}. Further, several
-proposals to accelerate the Viterbi algorithm (which is closely related to the
-forward algorithm) have been published: \cite{ASAP12_Azhar} presents an
-architecture for a lightweight Viterbi accelerator designed for an embedded
-processor datapath, \cite{IPDPS07_Jacob,ICS06_Maddimsetty,IPDPS07_Oliver}
-describe a \gls{fpga} based accelerator for protein sequence \gls{hmm} search
-and \cite{IPDPS09_Walters} describes i.a. an approach to accelerate the Viterbi
+given a \gls{hmm}. A proposals for \gls{gpu} based accelerator for the classic
+forward algorithm is described in \cite{liu09}. Further, several proposals to
+accelerate the Viterbi algorithm (which is closely related to the forward
+algorithm) have been published: \cite{ASAP12_Azhar} presents an architecture
+for a lightweight Viterbi accelerator designed for an embedded processor
+datapath, \cite{IPDPS07_Jacob,ICS06_Maddimsetty,IPDPS07_Oliver} describe
+a \gls{fpga} based accelerator for protein sequence \gls{hmm} search and
+\cite{IPDPS09_Walters} describes i.a. an approach to accelerate the Viterbi
 algorithm from the HMMER library\footnote{http://hmmer.janelia.org/} using
 \glspl{gpu}.
 
@@ -359,7 +359,7 @@ a definition of the fixed parameters is provided.
     \item L: observation sequence length
     \item R: number of \glspl{cdf} (kernels)
 \end{itemize}
-These are fixed parameters, because they need to be set at design time,
+These are fixed parameters because they need to be set at design time,
 based on the properties of the system emitting error events.
 
 The proposed failure prediction method aims to find sequences of error events
@@ -404,7 +404,7 @@ a complete prediction model with multiple failure types.
     \centering
     \input{./schema/model.tex}
     \caption{Overview of the failure prediction approach. Model 0 is trained
-        with non-failure sequences}
+        with non-failure sequences.}
     \label{fig:model}
 \end{figure}
 
@@ -573,7 +573,7 @@ By applying scaling, instead of the sequence likelihood (Equation \ref{eq:P}),
 the sequence log-likelihood must be computed:
 \begin{equation}
     \label{eq:Plog}
-    \log(P(\boldsymbol{o}|\lambda)) = -\sum\limits_{k=1}^{L} \log c_k
+    \log(P_s(\boldsymbol{o}|\lambda)) = -\sum\limits_{k=1}^{L} \log c_k
 \end{equation}
 where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $, defining the set of
 parameters.
@@ -595,17 +595,17 @@ likelihood of the non-failure model:
     \label{eq:class}
     \text{class}(s) = F \iff \max_{i=1}^{u} \big [
         \log P(\boldsymbol{s}|\lambda_i)
-    \big ] - \log P(\boldsymbol{s}|\lambda_0) > \log \theta
+    \big ] - \log P(\boldsymbol{s}|\lambda_0) > \log \theta_{th}
 \end{equation}
 with $\boldsymbol{s}$ denoting the sequence, $\lambda_i$ representing the
 parameter set of the failure models, $\lambda_0$ the parameter set of the
 non-failure model and
 \begin{equation}
     \label{eq:class_thresh}
-    \theta = \frac{(r_{\bar{F}F} - r_{\bar{F}\bar{F}})P(c_{\bar{F}})}
+    \theta_{th} = \frac{(r_{\bar{F}F} - r_{\bar{F}\bar{F}})P(c_{\bar{F}})}
         {(r_{F \bar{F}} - r_{FF})P(c_{F})}
 \end{equation}
-To calculate $\theta$, the following parameters need to be set:
+To calculate $\theta_{th}$, the following parameters need to be set:
 \begin{itemize}
     \item $ P(c_{\bar{F}}) $: prior of non-failure class
     \item $ P(c_F) $: prior of failure class
@@ -620,11 +620,11 @@ If no scaling is used, the dual-class classification problem can be formulated
 as follows:
 \begin{equation}
     \label{eq:class_ns}
-    \frac{P(s|\lambda_F)}{P(s|\lambda_{\bar{F}})} > \theta
+    \frac{P(s|\lambda_F)}{P(s|\lambda_{\bar{F}})} > \theta_{th}
 \end{equation}
 with $\boldsymbol{s}$ denoting the sequence, $\lambda_F$ representing the
 parameter set of the failure model and $\lambda_{\bar{F}}$ the parameter set of
-the non-failure model. $\theta$ is defined with Equation \ref{eq:class_thresh}.
+the non-failure model. $\theta_{th}$ is defined with Equation \ref{eq:class_thresh}.
 
 For multi-class classification the following rule can be used:
 \begin{equation}
@@ -737,7 +737,7 @@ where $ \alpha_k $ is a vector of size $ N $ of the prior computed $ \alpha
 $ variables, $ Q $ a matrix of size $ N \times N $ containing the transition
 probabilities and $ B(o_k) $ a vector of size $ N $ containing the emission
 probabilities of the k-th observation symbol. Note that the first
-multiplication is a Matrix-Vector multiplication that results in a vector,
+multiplication is a Matrix-Vector multiplication that results in a vector
 which is then multiplied element-wise with the vector $ B(o_k) $. The Equation
 \ref{eq:forward} describes the formal definition of the forward algorithm. In
 the final step the likelihood is computed, by summing up all elements of the
@@ -827,14 +827,14 @@ a non-pipelined system is increased by factor $L$ (assuming an infinite runtime
 or by ignoring the setup time). Another and more important fact that makes the
 pipeline architecture very beneficial in this particular case: the
 configuration allows to load the transition probabilities $Q$ and the emission
-probabilities $b_i(o_k)$ for all steps at the same time, which reduces the load
+probabilities $b_i(o_k)$ for all steps at the same time. This reduces the load
 operations by factor $L$. This is visualized in the Table \ref{tab:pipeline}.
 The table shows the pipeline stages with input values that are fed to the stage
 before the execution and the output values resulting after the execution of
 the pipeline stage. Figure \ref{fig:pipeline} shows a schematic representation
 of the pipeline. Note that the input values $Q$ and $B$ always depend on
 the same observation symbol. The parameter $d_k$ of the transition
-probabilities can be ignored in this case, because only in the extended forward
+probabilities can be ignored in this case because only in the extended forward
 algorithm they depend on $d_k$. This will be discussed further when the
 extension is considered.
 
@@ -937,7 +937,7 @@ number of subsets must correspond to the number of available computational
 units to perform the necessary operations. The choice of decomposition is
 heavily dependant on the accelerator architecture (e.g. communication between
 computational units, memory architecture). The resulting vector can then be
-multiplied element-wise with the emission probability vector, which is again the
+multiplied element-wise with the emission probability vector. This is again the
 same case as the initial step described above. In case of the block-striped
 matrix partitioning, the maximally achievable increase of the throughput is
 a factor of $N$ and the latency can be decreased by factor $\frac{1}{N}$,
@@ -983,11 +983,11 @@ The finalization step of the algorithm consists of calculating the likelihood.
 This is done by simply accumulating the $N$ elements of the last forward
 variable $\alpha_L$. This operation can be parallelized with a reduction tree,
 resulting in a throughput and latency optimization of $log_2(N)$ and
-$\frac{1}{log_2(N)}$ respecively as described above.
+$\frac{1}{log_2(N)}$ respectively as described above.
 
 The following sections will describe the impact on performance if scaling or
 the extension of the forward algorithm is implemented. Also the availability of
-parallelization in both cases will be discussed. Finnaly an overview of
+parallelization in both cases will be discussed. Finally an overview of
 available parallelism and a discussion about the usefulness of each
 parallelization method in the context of the different algorithm
 implementations will be provided.
@@ -1002,8 +1002,8 @@ smaller than one (e.g. probabilities) result in zero because of the limited
 accuracy by digitally representing fractional numbers. Scaling does not
 influence the order of complexity of the algorithm. By introducing a scaling
 method as proposed in the reference work, the complexity of calculating one
-$\alpha_k$ vector goes from $N^2$ (no scaling) to $N^2 + 2N + 1$ (scaling),
-which is the same order $O(N^2)$. However, the introduction of scaling may
+$\alpha_k$ vector goes from $N^2$ (no scaling) to $N^2 + 2N + 1$ (scaling). Both
+are of the same order $O(N^2)$. However, the introduction of scaling may
 increase the usage of resources significantly: In order to scale $\alpha_k$,
 the division operation is used to compute the scaling factor. Division is far
 more complex than multiplication and hence uses more resources. Additionally,
@@ -1014,7 +1014,7 @@ more complex log operation.
 In order to limit the amount of necessary division operations, it is beneficial
 to consider the following: Rather than scaling each element of $\alpha_k$ by
 dividing it by a scaling factor ($N$ divisions), first the inverse of the
-scaling factor can be computed, which is then multiplied with each element of
+scaling factor can be computed which is then multiplied with each element of
 $\alpha_k$ (one division and $N$ multiplications). Using $N$ multiplication
 units, this operation can be parallelized.
 
@@ -1085,7 +1085,7 @@ affected at all by the choice of data representation.
 If by choice, scaling is omitted, a fixed point representation will not be
 possible due to the rapid convergence towards zero by continuously multiplying
 probabilities. This implies that by omitting scaling to save
-resources, a floating point representation must be used, which in turn increases
+resources, a floating point representation must be used. This in turn increases
 the resource requirements or has a negative impact on performance (or both).
 
 The trade-off between the choice of using scaling or not versus the choice of
@@ -1098,32 +1098,31 @@ chosen.
 \section{Extension of the Forward Algorithm}
 \label{ch:analysis_extension}
 
-The proposed extension uses a transition probability matrix which is not
-constant. For every occurring observation symbol, the matrix must be recomputed
-by using the delay of the symbol (Equation \ref{eq:delay}) and the sum of
-different cumulative distribution functions (Equations \ref{eq:V} and
-\ref{eq:D}). Computing $N^2$ cumulative distribution functions is time
-intensive but it only needs to be computed once per $d_k$ and can then be
-stored for later use. A transition probability matrix can be used for the
-computation of $L$ forward variables due to the continuous computation of
-likelihood values (as depicted in Figure \ref{fig:sliding}). This implies that
-storage for $L$ such matrices must be available or the matrix must be
-recomputed when needed and only the delay value is stored. In case of
-a pipelined architecture, the additional storage or computation is not
-necessary (cf. Figure \ref{fig:pipeline} and Table \ref{tab:pipeline}). The
-computation of the transition probability matrix can be fully parallelized with
-$R*N^2$ computation units to calculate a \gls{cdf} of $d_k$ where $R$ is the
-number of different cumulative distribution functions necessary to model the
-behaviour of the events. The memory interface needs to be able to provide
-a throughput that is $R*N^2$ higher than in the sequential case (note that each
-cumulative distribution function takes several parameters as input. E.g. the
-normal \gls{cdf} has the two parameters $\mu$ and $\sigma$). In previous
-chapters, $R$ was always assumed to be equal to one in order to simplify the
-problem.
+The proposed extension uses a non constant transition probability matrix. For
+every occurring observation symbol, the matrix must be recomputed by using the
+delay of the symbol (Equation \ref{eq:delay}) and the sum of different
+cumulative distribution functions (Equations \ref{eq:V} and \ref{eq:D}).
+Computing $N^2$ cumulative distribution functions is time intensive, but it only
+needs to be computed once per $d_k$ and can then be stored for later use.
+A transition probability matrix can be used for the computation of $L$ forward
+variables due to the continuous computation of likelihood values (as depicted
+in Figure \ref{fig:sliding}). This implies that storage for $L$ such matrices
+must be available or the matrix must be recomputed when needed and only the
+delay value is stored. In case of a pipelined architecture, the additional
+storage or computation is not necessary (cf. Figure \ref{fig:pipeline} and
+Table \ref{tab:pipeline}). The computation of the transition probability matrix
+can be fully parallelized with $R*N^2$ computation units to calculate
+a \gls{cdf} of $d_k$ where $R$ is the number of different cumulative
+distribution functions necessary to model the behaviour of the events. The
+memory interface needs to be able to provide a throughput that is $R*N^2$
+higher than in the sequential case (note that each cumulative distribution
+function takes several parameters as input. E.g. the normal \gls{cdf} has the
+two parameters $\mu$ and $\sigma$). In previous chapters, $R$ was always
+assumed to be equal to one in order to simplify the problem.
 
-Note, that while the computation of one extended transition probability is
+Note that while the computation of one extended transition probability is
 independent of $N$ or $L$, it is still more complex than the simple \gls{macc}
-operation necessary to calculate a forward variable (cf.  the list below). Due
+operation necessary to calculate a forward variable (cf. the list below). Due
 to this, the computational units calculating the transition probability matrix
 must provide more performance than the units necessary to compute the
 resulting forward variables in order to not limit the throughput. To get
@@ -1145,10 +1144,10 @@ is, the following list with three common examples is provided:
                         & \quad \text{if $x < 0$}
                 \end{array} \right.
         \end{equation}
-        Only the exponential function is needed, which is quite a complex
+        Only the exponential function is needed which is quite a complex
         function compared to a multiplication and could be problematic in a
         fully parallelized implementation (considering all parallelization
-        options), but realizable in an implementation with less parallelism.
+        options) but realizable in an implementation with less parallelism.
     \item[Laplace \gls{cdf}] \hfill \\
         This distribution is somewhat the extension of the
         exponential distribution and is also called double exponential
@@ -1285,7 +1284,7 @@ leaves the first two columns to compare for the application at hand (a
 combination of both methods can still be considered, but not by using maximal
 parallelization).
 
-Table \ref{tab:summary_D}  only compares the pipelined architecture with the
+Table \ref{tab:summary_D} only compares the pipelined architecture with the
 parallel architecture but with more detailed estimations of resource usage.
 The comparison is done for the basic and the extended forward algorithm (for
 explanations refer to the previous sections in this chapter). In case of the
@@ -1396,7 +1395,7 @@ a combination of the parallel architecture and the pipeline should be chosen in
 order to maximize the memory interface usage. By doing this, a smaller latency
 is achieved by keeping the throughput high. Another reason to choose the
 pipelined architecture would be a simple state transition model (cf. Section
-\ref{ch:analysis_simple}) which allows to save only the non-zero transition
+\ref{ch:analysis_simple}). It allows to save only the non-zero transition
 probabilities in a list. From this optimisation the pipelined architecture
 benefits on a much larger scale as less serial accumulations would be
 necessary, while in the parallel architecture only the utilization of the
@@ -1409,7 +1408,7 @@ units, allows optimization in case of simple models and allows more time to
 compute the transition probabilities. Parallelization is only possible for very
 simple \gls{cdf} computations and for a small $N$.
 
-The scalability is in both cases limited, but more so with the parallel
+The scalability is in both cases limited but more so with the parallel
 architecture: If $N$ or $L$ becomes large such that off-chip memory is
 necessary (already for very small $N$ or $L$ for \glspl{cpu} and \glspl{gpu},
 less so for more flexible architectures like \glspl{fpga} or \glspl{asic}) the
@@ -1501,7 +1500,7 @@ the following list and the observations discussed in the previous sections.
         absence of division, exponential and logarithm functions. All units are
         optimized for fixed point representation and floating point numbers
         must be implemented manually. Core generators and very powerful
-        synthesis tools try to amend these drawbacks but still deep
+        synthesis tools try to amend these drawbacks, but still deep
         knowledge of \gls{hw} is necessary to successfully implement a function
         on \gls{fpga}.
     \item[\acrshort{asic}] \hfill \\
@@ -1524,7 +1523,7 @@ manner, one can conclude that the further down the list one goes, the better
 the performance - power consumption ratio and the lower the flexibility of the
 device to accept general function descriptions (cf. Figure \ref{fig:hw}, e.g.
 a function description for a \gls{fpga} must be a lot more specific than one
-for a \gls{gpu} but the performance-power consumption ratio is a lot better in
+for a \gls{gpu}, but the performance-power consumption ratio is a lot better in
 case of the \gls{fpga}). For this work, one key point is high performance,
 because the algorithm is computationally intensive and needs to be executed
 fast. Another important point is the size of the system: the target application
@@ -1741,7 +1740,7 @@ cycles, the diagonal value corresponding to the row that was just accumulated
 subtracted and a bitwise inverse is performed to compute $1 - v_{i, sum}$. In
 order to not interrupt the pipeline flow when a corrected diagonal value must
 be written, a dual-port memory is needed. Note that the values need to be
-written column-wise (to use a pipelined accumulator) but to calculate the
+written column-wise (to use a pipelined accumulator), but to calculate the
 $\alpha$ vector, they need to be read row-wise. To prevent interference, two
 memory blocks are necessary that act alternating as target for storing values
 and as reading memory (similar to the $\alpha$ memory queues described in the
@@ -1759,30 +1758,33 @@ Figure \ref{fig:arch_cdf1} shows the design of the exponential \gls{cdf} (cf.
 Equation \ref{eq:cdf_exp}), and \ref{fig:arch_cdf2} shows the design of the
 Laplace \gls{cdf} (cf. Equation \ref{eq:cdf_laplace}). Due to the very complex
 computation of the Gaussian \gls{cdf} (cf. Equation \ref{eq:cdf_gauss}) the
-design of this \gls{cdf} was omitted. All \glspl{cdf} need the exponential
-function. In addition, the Laplace \gls{cdf} needs a division operation, an
-adder and a comparator. The shift operation is constant and can be achieved
-with fixed wiring. The exponential \gls{cdf} only needs a multiplier and
-a comparator. Of the required components, the exponential function poses the
-biggest problem. Fortunately, implementation solutions of exponential functions
-for \glspl{fpga} have been proposed (\cite{RSSI08_Pottathuparambil,
-ICFPT05_Detrey}). These solutions are however designs for floating point
-numbers. Therefore, the division, multiplication, comparison and addition
-operations must also be done in floating points. It is out of the scope of this
-thesis to design and/or implement these elements. There is however the Xilinx
-CORE Generator tool\footnote{http://www.xilinx.com/tools/coregen.htm} that can
-build a functional blocks performing floating point operations.  Unfortunately
-there is no support for exponential functions. Another option of solving this
-problem is to use a \gls{lut} storing results of a precomputed exponential
-function. The range of the computed values depends on the trained features of
-the chosen \gls{cdf}. With an interpolation, intermediate values are
-calculated. The benefit of this option is the possibility to go back to a fixed
-point representation for all operations. To precompute the complete \gls{cdf}
-would be challenging, due to the fact that for each value in $V$ specific
-\gls{cdf} parameters are required and hence imply an increased memory
-complexity to the order $O(C*N^2)$, with $C$ denoting the number of values
-necessary to describe the \gls{cdf}. The extension will not be implemented on
-a \gls{hw} solution within the scope of this thesis.
+design of this \gls{cdf} was omitted. As described in \cite{ross10}, the
+occurrence of failure events can often be described as a Poisson process. This
+justifies the choice of omitting the Gaussian \gls{cdf} for this application.
+All \glspl{cdf} need the exponential function. In addition, the Laplace
+\gls{cdf} needs a division operation, an adder and a comparator. The shift
+operation is constant and can be achieved with fixed wiring. The exponential
+\gls{cdf} only needs a multiplier and a comparator. Of the required components,
+the exponential function poses the biggest problem. Fortunately, implementation
+solutions of exponential functions for \glspl{fpga} have been proposed
+(\cite{RSSI08_Pottathuparambil, ICFPT05_Detrey}). These solutions are however
+designs for floating point numbers. Therefore, the division, multiplication,
+comparison and addition operations must also be done in floating points. It is
+out of the scope of this thesis to design and/or implement these elements.
+There is however the Xilinx CORE Generator
+tool\footnote{http://www.xilinx.com/tools/coregen.htm} that can build
+a functional blocks performing floating point operations.  Unfortunately there
+is no support for exponential functions. Another option of solving this problem
+is to use a \gls{lut} storing results of a precomputed exponential function.
+The range of the computed values depends on the trained features of the chosen
+\gls{cdf}. With an interpolation, intermediate values are calculated. The
+benefit of this option is the possibility to go back to a fixed point
+representation for all operations. To precompute the complete \gls{cdf} would
+be challenging, due to the fact that for each value in $V$ specific \gls{cdf}
+parameters are required and hence imply an increased memory complexity to the
+order $O(C*N^2)$, with $C$ denoting the number of values necessary to describe
+the \gls{cdf}. The extension will not be implemented on a \gls{hw} solution
+within the scope of this thesis.
 
 \begin{figure}
     \centering
@@ -1832,8 +1834,8 @@ prevent an underflow. In this case, the \gls{dsp} slices need to be extended in
 order to support floating points. In the following this option is discussed and
 then compared to a fixed point solution with scaling.
 
-In order to be able to add floating point numbers (which should be done with the
-accumulator of the \gls{dsp}-Slice) the exponents of the numbers must be equal.
+In order to be able to add floating point numbers, which should be done with the
+accumulator of the \gls{dsp}-Slice, the exponents of the numbers must be equal.
 To achieve that, the difference of the two exponents is calculated and then the
 mantissa of the number with the lower exponent must be shifted by this
 difference (and possibly rounded/truncated). This process is called
@@ -1863,7 +1865,7 @@ throughput: Using the latencies presented in the work, 22 cycles are necessary
 for multiplication and 25 cycles for addition. Using memory to store the
 intermediate results the operations could be pipelined, but without additional
 memory no pipelining is possible. A more optimized solution for the algorithm
-at hand can surely be found but a more profound analysis of floating point
+at hand can surely be found, but a more profound analysis of floating point
 operations on \gls{fpga} must be performed to gain more insight. This is
 however beyond the scope of this work and the present facts are enough to
 first consider a fixed point solution with scaling before heading deeper into
@@ -1894,7 +1896,7 @@ a fixed-pint implementation is more realistic.
 
 The \gls{dsp} slices allow fixed point \gls{macc} operations with an operand of
 bit width 18 and one of bit width 25. Internally the device works with a bit
-width of 48 bits, which allows a lossless multiplication (43 bits) and an
+width of 48 bits. This allows a lossless multiplication (43 bits) and an
 accumulation with 5 bits margin for overflow. Due to the properties expressed
 in Equations \ref{eq:scaling_sum}, these five additional bits are not necessary
 in the present case. After the \gls{macc} operation, the second multiplication
@@ -1936,19 +1938,19 @@ current event sequence. The scaling method is presented in Figure
 
 To perform the scaling, a \gls{dsp}-Slice can be used by simply multiplying the
 operand with the factor $2^{LZC}$. The whole range of internal 43 bits of the
-\gls{macc} operation needs to be scaled, which can be achieved by two cycles of
-one \gls{dsp}-Slice. First the lower 18 bits ($op_{low}$) of the 43 internal
-bits ($op$) are introduced into the \gls{dsp}-Slice and multiplied by the
-factor $2^{LZC}$. A precomputed \gls{lut} is used to select the factor
+\gls{macc} operation needs to be scaled. The scaling can be achieved by two
+cycles of one \gls{dsp}-Slice. First the lower 18 bits ($op_{low}$) of the 43
+internal bits ($op$) are introduced into the \gls{dsp}-Slice and multiplied by
+the factor $2^{LZC}$. A precomputed \gls{lut} is used to select the factor
 corresponding to $2^{LZC}$ using \gls{lzc} as input. In next cycle, the upper
 25 bits ($op_{up}$) of $op$ are selected and introduced into the
 \gls{dsp}-Slice. $op_{up}$ is shifted by a constant amount of bits
 corresponding to the width of the lower part shifted before to the right (this
 can be done internally by the \gls{dsp}-Slice) and then also multiplied by the
 factor $2^{LZC}$. The accumulator then adds the two shifted operands $op_{low}$
-and $op_{up}$ together which results in a shifted value of $op$ by \gls{lzc}
+and $op_{up}$ together. This results in a shifted value of $op$ by \gls{lzc}
 bits to the right. All these operations can be done by using only one
-\gls{dsp}-Slice.  Figure \ref{fig:arch_step_scale} shows the necessary
+\gls{dsp}-Slice. Figure \ref{fig:arch_step_scale} shows the necessary
 schematics. As described in Section \ref{ch:design_arch}, the simplified
 representation of the memory queue has been replaced with two memory blocks.
 
@@ -1970,7 +1972,7 @@ To further increase the precision, the stored values $\pi$, $B$ and $Q$ can be
 preprocessed and scaled. Also here, the element with the lowest number of
 leading zeros decides the scaling factor. By doing this, the assumption that an
 overflow cannot happen due to the fact that probabilities are involved doesn't
-hold anymore. Hence, by introducing pre-scaling, overflow handling and
+hold anymore. Hence, by introducing prescaling, overflow handling and
 correction must be added.
 
 %-------------------------------------------------------------------------------
@@ -1988,7 +1990,7 @@ flow is available (which is usually the case for \glspl{gpp}). Sizes of fast
 caches are quite small and are only useful if data is frequently reused. In the
 present case however such a memory hierarchy would be bad because of the
 high velocity of data. The algorithm at hand always requires the complete
-matrix $Q$ which is of size $N^2$ to compute the next forward variable. The
+matrix $Q$, which is of size $N^2$, to compute the next forward variable. The
 same is true for the vectors $\pi$ and $B(o_k)$. In case of a memory hierarchy
 this implies that either the cache is big enough, or there will always be
 cache misses. In such cases it is much more beneficial to build a scratch pad
@@ -2023,9 +2025,9 @@ accelerator can handle. Ideally, the buffer should never be empty and never
 full. A buffer that is always empty, indicates that the performance of the
 accelerator is too high. The frequency of the accelerator can be lowered in
 order to save more energy. If the buffer gets filled up, it becomes
-problematic, because new events cannot be stored and are lost. If the average
+problematic because new events cannot be stored and are lost. If the average
 frequency of the arriving events is lower than the maximal throughput of the
-accelerator the buffer is designed to small. If the frequency is higher, the
+accelerator the buffer is designed too small. If the frequency is higher, the
 performance of the accelerator is insufficient.
 
 As already mentioned in Chapter \ref{ch:design_arch}, intermediate vectors
@@ -2145,25 +2147,23 @@ github\footnote{https://github.com/moiri/USI-thesis-accelerator}.
 \label{ch:results}
 \glsresetall % reset acronyms
 
-This chapter presents the results achieved by running sample data on the design
-of the accelerator. Due to a lack of real application data, which is very hard
+This chapter presents the results achieved by running sample data on
+the accelerator. Due to a lack of real application data, which is very hard
 to come by due to confidentiality concerns, test runs have been performed with
 pseudo random data respecting the properties of Equation \ref{eq:scaling_sum}.
-Random data can be used, because \cite{salfner08} performed a thorough evaluation
-of the prediction algorithm and shows that it performs well. In this thesis results in
-terms of speedup, accuracy and usage of resources are provided. The tests
-have been performed on the developer board
+Random data can be used because \cite{salfner08} performed a thorough
+evaluation of the prediction algorithm and showed that accurate predictions can be made. In this
+thesis results in terms of speedup, accuracy and usage of resources are
+provided. The tests have been performed on the developer board
 Nexys4\footnote{http://www.digilentinc.com/Products/Detail.cfm?Prod=NEXYS4}
-from Digilent. The board is composed of an Artix-7 XC7A100T-1
-\footnote{http://www.xilinx.com/products/silicon-devices/fpga/artix-7/}
-\gls{fpga} from Xilinx and peripherals (e.g. \gls{ram}, flash,
-communication interfaces). It is a low price product that offers a limited
-amount of computation units and memory. A failure prediction system with values
-for $N$ and $L$ of up to 100 respectively 50 and one failure type can be
-implemented on such a device. In order to test the design, the internal memory
-of the \gls{fpga} has been loaded with fixed data and the device was configured
-to compute the equivalent to the likelihood of one sequence of event
-occurrences.
+from Digilent. The board is composed of an Artix-7 XC7A100T-1\footnote{http://www.xilinx.com/products/silicon-devices/fpga/artix-7/}
+\gls{fpga} from Xilinx and peripherals (e.g. \gls{ram}, flash, communication
+interfaces). It is a low price product that offers limited amount of
+computation units and memory. Tests with values for $N$
+and $L$ of up to 100 respectively 50 have been performed on this
+device. In order to test the design, the internal memory of the
+\gls{fpga} has been loaded with fixed data, and the device was configured to
+compute the equivalent to the likelihood of one sequence of event occurrences.
 
 In the following, first the accuracy will be discussed. Then the speedup of the
 accelerator compared to a \gls{cpu} is presented and finally the resource
@@ -2173,10 +2173,10 @@ requirements are put in relation with the values of $L$ and $N$.
 %===============================================================================
 \section{Accuracy}
 
-To test the accuracy of the accelerator the same data set was used to run the
+To test the accuracy of the accelerator, the same data set was used to run the
 algorithm on the accelerator and on a test \gls{cpu}. The results from both
 devices were used to calculate an error (cf. Equation \ref{eq:error}). The
-result of the \gls{cpu} was used as reference. On the test \gls{cpu} the basic
+result of the \gls{cpu} was used as reference value. On the test \gls{cpu} the basic
 algorithm was computed (without scaling) for feasible values of $N$ and $L$.
 The double precision of the floating points is able to compute a likelihood for
 $L \leq 106$, assuming $M=1000$.
@@ -2189,8 +2189,8 @@ $L \leq 106$, assuming $M=1000$.
 Table \ref{tab:res_small} shows the accuracy of the accelerator with operand
 widths of 18 bits ($OP_2$) for the emission probability vector $B$ and the
 transition probability matrix $Q$ and 25 bits ($OP_1$) for the initial
-probability vector $\pi$ and the intermediate forward variables $\alpha$ as
-well as for the likelihood.
+probability vector $\pi$, the intermediate forward variables $\alpha$, and
+the likelihood.
 
 \begin{table}
     \footnotesize
@@ -2207,21 +2207,21 @@ well as for the likelihood.
     \end{tabular}
     \end{center}
     \caption{Accuracy of the accelerator using operand widths of $OP_1 = 25$
-        and $OP_2 = 18$ bit}
+        and $OP_2 = 18$ bits.}
     \label{tab:res_small}
 \end{table}
 
 The accuracy is very poor. An error of 10\% with values of $N=100$ and $L=50$
 is not acceptable and needs to be improved. An improvement of accuracy can be
 achieved by using either a larger operand representation, introducing rounding
-instead of truncation or by pre scaling operands. As can be seen in in Table
+instead of truncation, or by prescaling operands. As can be seen in in Table
 \ref{tab:res_small} the error is increasing very fast with a growing $L$. This
 points to a problem with the emission probabilities and excludes a truncation
-error. Operand pre-scaling could help to reduce the error but no solution with
-pre-scaling has been implemented. This leaves the solution of increasing the
+error. Operand prescaling could help to reduce the error, but no solution with
+prescaling has been implemented. This leaves the solution of increasing the
 operand width. The source code of the implementation was designed in such a way
 to allow changing the operand width with a minimal effort. In order to limit
-the impact on resources increase, only the width of $B$ and $TP$ is increased
+the increase of resources, only the width of $B$ and $TP$ is increased
 from 18 to 25 bits. As $B$ is multiplied to the accumulated result at the end
 of each pipeline stage, it is very probable that the small bit width of $B$
 causes this big error. The proposed change doubles the number of \gls{dsp}
@@ -2229,8 +2229,8 @@ slices but has no impact on latency and throughput of the accelerator.
 
 Table \ref{tab:res_mid} shows the results with an operand width for all operands
 equal to 25 bit. The accuracy is now in an acceptable range for the chosen
-values of $N$ and $L$. With $N=100$ and $L=50$ an error of only 0.3\% appears.
-It would be interesting to see the error for bigger values of $L$ but
+values of $N$ and $L$. With $N=100$ and $L=50$ the error is now 0.29\%.
+It would be interesting to see the error for bigger values of $L$, but
 unfortunately this is not possible because of the available \gls{hw}.
 
 \begin{table}
@@ -2250,7 +2250,7 @@ unfortunately this is not possible because of the available \gls{hw}.
     \end{tabular}
     \end{center}
     \caption{Accuracy of the accelerator using operand widths of
-        $OP_1 = OP_2 = 25$ bit}
+        $OP_1 = OP_2 = 25$ bits.}
     \label{tab:res_mid}
 \end{table}
 
@@ -2258,37 +2258,41 @@ unfortunately this is not possible because of the available \gls{hw}.
 %===============================================================================
 \section{Speedup}
 
-The results of the accelerator were compared to a \gls{cpu} from Intel of the
-type i7 3537U with frequency of up to 3.1 GHz. The test program was implemented
-with Octave\footnote{http://www.gnu.org/software/octave/}, using matrix
-operations in order to maximize performance of the serial implementation. The
-test program was run multiple times in order to allow the \gls{cpu} to use the
-cache memory to its full extent.
+The results of the accelerator were compared to an Intel \gls{cpu} of the type
+i7 3537U. This \gls{cpu} operates at a frequency of up to 3.1 GHz. The test
+program was implemented with
+Octave\footnote{http://www.gnu.org/software/octave/}, using matrix operations
+in order to maximize performance of the serial implementation. The test program
+was run multiple times in order to allow the \gls{cpu} to use the cache memory
+to its full extent.
 
 The accelerator was run at a frequency of 85MHz. Table \ref{tab:res_speed}
-lists in the third column the latency of a likelihood computation on the
+lists in the third column the latency of a likelihood, computed on the
 accelerator. The next two columns list the delay of consecutive results (the
 reciprocal value of the throughput) for the accelerator and the \gls{cpu}. For
-values of $L > 106$ scaling is required in case of the \gls{cpu}. The results
-by using scaling with the \gls{cpu} are listed in column six of Table
-\ref{tab:res_speed}.  The last two columns show the achieved speedup, comparing
+values of $L > 106$ scaling is required in case of a computation on the
+\gls{cpu}. The results with scaling are listed in column six of Table
+\ref{tab:res_speed}. The last two columns show the achieved speedup, comparing
 the accelerator to the basic and the scaled serial implementation respectively.
-Blue rows represent not real measurements of the computation time of the
-accelerator but only estimates assuming a bigger \gls{fpga} is available. The
-difference in frequencies of the two devices was not taken into account (only
-the real measured computation times are considered) In general, the table shows
-that the accelerator is faster than the serial computation. Using the values
-for $L$ and $N$ proposed in \cite{salfner08} the estimated speedup is 48.85.
-Considering the difference in power consumption of the accelerator (estimated
-consumption of 100mW\footnote{estimated with the ISE design suite of Xilinx})
-compared to the \gls{cpu} (\gls{tpd} of 17W) the results are promising and meet
-the expectations.
+Grey rows represent not real measurements of the computation time of the
+accelerator but only estimates. The estimation is based on the results computed
+with lower values of $N$ and $L$. These results can be scaled by using the
+knowledge that the computation of one $\alpha$ vector component takes $N^2
++ 10N +2 cycles$ to complete. The difference in frequencies of the two devices
+was not taken into account (only the real measured computation times are
+considered). In general, the table shows that the accelerator is faster than
+the serial computation. Using the values for $L$ and $N$ proposed in
+\cite{salfner08} the estimated speedup is 48.85.  Considering the difference in
+power consumption of the accelerator (estimated consumption of
+100mW\footnote{estimated with the ISE design suite of Xilinx}) compared to the
+\gls{cpu} (\gls{tpd} of 17W) the results are promising and meet the
+expectations.
 
 By analyzing the table in more detail, big jumps in speedup occur whenever $L$
-becomes to big and scaling must be applied even with floating point numbers.
+becomes too big and scaling must be applied even with floating point numbers.
 Not only scaling is an issue but also the size of data. The bigger $L$ and $N$
-grows the more likely it becomes that the cache of the \gls{cpu} is to small
-to hold all values. At this point memory access is necessary which increases
+grows, the more likely it becomes that the cache of the \gls{cpu} is too small
+to hold all values. At this point, memory access is necessary which increases
 the computation time considerably.
 
 The throughput of the accelerator depends only on $N$ and is independent of $L$
@@ -2312,22 +2316,23 @@ decreases with increasing $L$ and $N$.
         100 & 10  & 1.29  & 0.13 & 0.28 & 0.45 & 2.16  & 3.48  \\
         100 & 20  & 2.59  & 0.13 & 0.43 & 0.77 & 3.32  & 5.95  \\
         100 & 50  & 6.47  & 0.13 & 0.87 & 1.71 & 6.72  & 13.21 \\
-        \rowcolor{blue!25}
+        \rowcolor{black!20}
         100 & 100 & 12.94 & 0.13 & 1.5  & 3.27 & 11.59 & 25.27 \\
-        \rowcolor{blue!25}
+        \rowcolor{black!25}
         100 & 200 & 25.88 & 0.13 &      & 6.35 &       & 48.85 \\
         200 & 10  & 4.94  & 0.49 & 0.42 & 0.60 & 0.85  & 1.21  \\
         200 & 20  & 9.88  & 0.49 & 0.69 & 1.07 & 1.40  & 2.17  \\
-        \rowcolor{blue!25}
+        \rowcolor{black!20}
         200 & 50  & 24.71 & 0.49 & 1.5  & 2.46 & 3.04  & 4.98  \\
-        \rowcolor{blue!25}
+        \rowcolor{black!20}
         200 & 100 & 49.41 & 0.49 & 2.9  & 4.78 & 5.87  & 9.67  \\
-        \rowcolor{blue!25}
+        \rowcolor{black!20}
         200 & 200 & 98.82 & 0.49 &      & 9.52 &       & 19.27 \\
         \hline
     \end{tabular}
     \end{center}
-    \caption{Speedup of the accelerator}
+    \caption{Speedup of the accelerator using operand widths of
+        $OP_1 = OP_2 = 25$ bits.}
     \label{tab:res_speed}
 \end{table}
 
@@ -2343,8 +2348,8 @@ designed manually.
 \section{Resources}
 \label{ch:conc_ach}
 
-The Table \ref{tab:res_res} shows the required resources in relation with the
-values of $N$ and $L$. Blue rows indicate that the values have been estimated
+Table \ref{tab:res_res} shows the required resources in relation with the
+values of $N$ and $L$. Grey rows indicate that the values have been estimated
 while the white rows represent values obtained by performing a synthesis of the
 \gls{hdl} source. The last column of the table provides an example \gls{fpga}
 of appropriate
@@ -2362,23 +2367,23 @@ size\footnote{http://www.xilinx.com/support/documentation/data\_sheets/ds180\_7S
         100 & 10 & 2718  & 27  & 10 & XC7A35T \\
         100 & 20 & 5462  & 47  & 20 & XC7A35T \\
         100 & 50 & 13694 & 107 & 50 & XC7A100T\\
-        \rowcolor{blue!25}
+        \rowcolor{black!20}
         100 & 100 & 27000 & 207 & 100 & XC7A200T\\
-        \rowcolor{blue!25}
+        \rowcolor{black!20}
         100 & 200 & 54000 & 407 & 200 & XC7K355T\\
         200 & 10 & 2815  & 65  & 20 & XC7A50T \\
         200 & 20 & 5635  & 85  & 40 & XC7A75T \\
-        \rowcolor{blue!25}
+        \rowcolor{black!20}
         200 & 50 & 14000  & 145 & 100 & XC7A200T \\
-        \rowcolor{blue!25}
+        \rowcolor{black!20}
         200 & 100 & 28000 & 245 & 200 & XC7A200T \\
-        \rowcolor{blue!25}
+        \rowcolor{black!20}
         200 & 200 & 56000 & 445 & 400 & XC7K410T \\
         \hline
     \end{tabular}
     \end{center}
     \caption{Resource requirement of the accelerator using operand widths of
-        $OP_1 = OP_2 = 25$}
+        $OP_1 = OP_2 = 25$ bits.}
     \label{tab:res_res}
 \end{table}
 
@@ -2388,7 +2393,7 @@ size\footnote{http://www.xilinx.com/support/documentation/data\_sheets/ds180\_7S
 \label{ch:conc}
 \glsresetall % reset acronyms
 
-Throughout this thesis a lot of options have been presented and a lot of
+Throughout this thesis a lot of options have been presented, and a lot of
 decisions have been taken. The vast amount of possibilities in the field of
 accelerators poses a big challenge to find a solution close to the optimum.
 One goal of the thesis was to consider multiple viewpoints and trade-offs and
@@ -2406,37 +2411,38 @@ reconsider some points. The former points will be concluded in Section
 This thesis proposes a novel design of the basic forward algorithm on
 a \gls{fpga}. A fixed point operand representation and a custom operand scaling
 scheme is presented. These choices allow to keep the required resources at
-a low level and limit the energy consumption. Te analysis of reasonable
+a low level and limit the energy consumption. The analysis of reasonable
 parallelization options led to to the choice of a pipelined architecture. The
 architecture allows to reduce memory access by a factor of $L$. As the design
 targets embedded systems, the main focus was to reduce the resource footprint
 while keeping throughput and latency at an acceptable level. With small values
 of $L$ and $N$ the accelerator performs slightly better than a \gls{gpp}.
-A speedup in teh order of 10 can be achieved. For small values of $N$ and $L$
+A speedup in the order of 10 can be achieved. For small values of $N$ and $L$
 the memory hierarchy of \glspl{gpp} poses no problem and is able to handle the
 data flow. The better performance of the accelerator is due to the efficient
 design and the fixed-point data representation. By increasing $N$ and $L$ the
 accelerator performs better and reaches higher speedup factors. This increase
 of speedup is caused by limited availability of fast memory in the memory
 hierarchy of \gls{gpp}. Another reason for the increased speedup is scaling.
-With $L > 100$ (assuming an alphabet size of $M=1000$) scaling becomes necessary 
-even with double precision representation. For $L=200$ and $N=100$, values
-proposed in \cite{salfner08}, a speedup of 48.85 is achieved (this value has
-only been estimated).
-Due to the lack of a bigger \gls{fpga} test board, the speedup values for
-bigger $L$ and $N$ have been estimated by scaling the results from the real
-tests. Scaling the results is a valid approach due to the fixed memory design.
-A limiting factor of scalability is on one hand the available \gls{fpga} and
-on the other hand the critical path. By using a bigger \gls{fpga} it becomes
-more difficult to run the device at high frequencies.
+With $L > 106$ (assuming an alphabet size of $M=1000$) scaling becomes
+necessary even with double precision representation. For $L=200$ and $N=100$,
+values proposed in \cite{salfner08}, a speedup of 48.85 is achieved (this value
+has only been estimated).  Due to the lack of a bigger \gls{fpga} test board,
+the speedup values for bigger $L$ and $N$ have been estimated by scaling the
+results from the real tests. Scaling the results is a valid approach due to the
+direct relation of $N$ to the number of required cycles to compute one $\alpha$
+vector component.  A limiting factor of scalability is on one hand the
+available \gls{fpga} and on the other hand the critical path. By using a bigger
+\gls{fpga} it becomes more difficult to run the device at high frequencies.
 
-The thesis further proposes a design solution for a failure prediction model,
-described in \cite{salfner08}. This includes the design of an extension to the
-forward algorithm and a memory management. The extension is designed by adding
-a computation unit to calculate a new transition probability matrix for every
-occurring error event. The proposed design of the predictor allows to implement
-a system capable of predicting one failure type on a \gls{fpga} board, by using
-custom peripherals (\gls{ram}, Flash, communication interface).
+The thesis further proposes a design solution for a failure prediction model
+that is described in \cite{salfner08}. This includes the design of an extension
+to the forward algorithm and a memory management system. The extension is
+designed by adding a computation unit to calculate a new transition probability
+matrix for every occurring error event. The proposed design of the predictor
+allows to implement a system capable of predicting one failure type on
+a \gls{fpga} board, by using custom peripherals (\gls{ram}, Flash,
+communication interface).
 
 On a conceptional point of view, the thesis provides argumentation on why in
 a world full of cloud server systems a failure prediction system for a single
@@ -2461,24 +2467,25 @@ should be performed.
 The implementation of the accelerator lacks interfaces to peripherals (e.g.
 external volatile and non-volatile memories, communication interface) due to
 the non availability of libraries or necessary licences. In order to use the
-Accelerator in a real case scenario those interfaces must be added. The general
+accelerator in a real case scenario those interfaces must be added. The general
 approach would be to load the emission probability matrix of size $N \times M$
-from a non-volatile external memory into a volatile external memory (e.g.
+from a external non-volatile memory into a external volatile memory (e.g.
 \gls{ram}) on power up. The parameters for the \gls{cdf} and the initial state
-probabilities can either be loaded from the external non-volatile external
-memory into the block memory of the \gls{fpga} or the data is already available
-on the \gls{fpga}. This can be the case if \gls{rom} storage is used or
-initialized block \gls{ram}.  Depending on the occurring event, a corresponding
-emission probability vector is loaded into the \gls{fpga} from the volatile
-memory. The communication interface needs to be set up in order to read
-occurring error events and write prediction results.
+probabilities can either be loaded from the external non-volatile memory into
+the block memory of the \gls{fpga} or the data is already available on the
+\gls{fpga}. This can be the case if \gls{rom} storage is used or initialized
+block \gls{ram}.  Depending on the occurring event, a corresponding emission
+probability vector is loaded into the \gls{fpga} from the volatile memory. The
+communication interface needs to be set up in order to read occurring error
+events and write prediction results.
 
-By using a simplified model (cf. \ref{ch:analysis_simple}), most op the transition probability matrix entries
-would be zero. This allows to use a sparse matrix storage technique. A design
-and implementation of such a technique would reduce the complexity by order
-$O(N)$. A study of sparse matrix multiplication parallelization methods could
-prove to be beneficial in order to decrease the latency and the throughput
-of the accelerator. However, a complete new design would be necessary.
+By using a simplified model (cf. \ref{ch:analysis_simple}), most of the
+transition probability matrix entries would be zero. This allows to use
+a sparse matrix storage technique. A design and implementation of such
+a technique would reduce the complexity by order $O(N)$. A study of sparse
+matrix multiplication parallelization methods could prove to be beneficial in
+order to decrease the latency and the throughput of the accelerator. However,
+a complete new design would be necessary.
 
 On a more detailed level, some improvements concerning the present
 implementation could increase performance, lower resource requirements and
@@ -2492,12 +2499,60 @@ accuracy:
         would increase the accuracy of the accelerator.
 \end{itemize}
 
-\nocite{*}
+%\nocite{*}
 
 \appendix %optional, use only if you have an appendix
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Symbols}
+
+\begin{itemize}
+    \item N: number of states of the \acrshort{hsmm}
+    \item M: number of observation symbols (size of the alphabet)
+    \item L: observation sequence length
+    \item R: number of \acrshort{cdf} (kernels)
+    \item S: number of failure types
+    \item $ \pi_i $, forming the initial state probability vector
+        $ \boldsymbol{\pi} $ of size $ N $
+    \item $ b_i(o_j) $, forming the emission probability matrix $ B $ of size
+        $ N \times M $
+    \item $ p_{ij} $, forming the matrix of limiting transmission probabilities
+        $ P $ of size $ N \times N $
+    \item $ \omega_{ij, r} $, the weights of the kernel $ r $, with
+        $i,j \in \{1, \dots, N\} $
+    \item $ \theta_{ij, r} $, the parameters of the kernel $ r $, with
+        $i,j \in \{1, \dots, N\} $
+    \item $v_{ij} $, forming the extended transition probability matrix $V$ of
+        size $N \times N$
+    \item $a_{ij} $, forming the basic transition probability matrix $A$ of size
+        $N \times N$
+    \item $q_{ij}$ forming the transition probability matrix $Q$ of size
+        $N \times N$, addressing both versions (basic and extended)
+    \item $d_{ij}(d_k)$, forming the matrix of cumulative transition duration
+        distribution functions $D(d_k)$ of size $N \times N$
+    \item $\kappa_{ij}(d_k|\theta_{ij})$ forming the kernel matrix of size
+        $N \times N$
+    \item $\alpha_k(i)$: i-th component of the forward variable vector
+        $\alpha_k$ with $k \in \{1, \dots, L\}$
+    \item $O_k$: k-th observation element of the observation sequences
+        $O_1, \dots, O_L$
+    \item $o_k$: k-th observation symbol of the set of observation symbols
+        $\{o_1, \dots, o_M\}$
+    \item $d_k$: delay of the observation element $O_k$ with respect to the
+        observation element $O_{k-1}$, with $k \in \{1, \dots, L\}$
+    \item $c_k$: scaling coefficient of $\alpha_k$ with $k \in {1, \dots, L}$
+    \item $P_s(\boldsymbol{o}|\lambda)$: likelihood of the \acrshort{hsmm}
+    \item $\lambda$: the set of parameters of the \acrshort{hsmm}
+    \item $\theta_{th}$: classification threshold
+    \item $ P(c_{\bar{F}}) $: prior of non-failure class
+    \item $ P(c_F) $: prior of failure class
+    \item $ r_{\bar{F}\bar{F}} $: true negative prediction
+    \item $ r_{FF} $: true positive prediction
+    \item $ r_{\bar{F}F} $: false positive prediction
+    \item $ r_{F\bar{F}} $: false negative prediction
+\end{itemize}
+
 \chapter{Control Signals}
 
 \begin{table}
