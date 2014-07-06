@@ -78,13 +78,14 @@ morecomment=[l]{//s},
     state.
 
     This thesis proposes an accelerator design on a \acrfull{fpga} for
-    a failure prediction algorithm. The algorithm is based on the processing of
-    error event sequences, modeled with a \acrfull{hsmm}. The sequence
-    processing is based on the forward algorithm. The design and implementation
-    of the forward algorithm is provided in a fixed-point data representation
-    and proposes a simple operand scaling method with a low overhead. The
-    design focuses on low resource utilisation and energy consumption. The
-    accelerator outperforms conventional processors by a factor of up to 48.85.
+    a failure prediction algorithm. The prediction method is based on the
+    processing of error event sequences and modelled with a \acrfull{hsmm}. The
+    sequence processing is based on the forward algorithm. The design and
+    implementation of the forward algorithm is provided in a fixed-point data
+    representation and proposes a simple operand scaling method with a low
+    overhead. The design focuses on low resource utilisation and energy
+    consumption. The accelerator outperforms conventional processors by
+    a factor of up to 48.85.
 \end{abstract}
 
 %\begin{abstract}[Zusammenfassung]
@@ -97,13 +98,14 @@ morecomment=[l]{//s},
 
 \begin{acknowledgements}
 First, I want to thank Prof. Dr. Miroslaw Malek for giving me the possibility
-to do the thesis and all the constructive suggestions he provided.
+to do the thesis and providing me with constructive feedback and helpful
+suggestions.
 
 I thank Samuel Sch\"{u}rch and Nicolas Lenz for reading the thesis, providing
-helpful suggestions and pointing out flaws.
+helpful advice and pointing out flaws.
 
-Further I want to thank my girlfriend Giovina, my flatmates, and my family who
-endured my unsteady mood during the final phase of the thesis.
+Further I want to thank my girlfriend Giovina Nicolai, my flatmates, and my
+family who endured my unsteady mood during the final phase of the thesis.
 
 Finally I thank all the brilliant novel writers out there I thoroughly missed
 during the last couple of months.
@@ -133,28 +135,27 @@ a piece of \gls{sw} comes without any faults. On top of that, the same problem
 arises with the \gls{hw} components which may contain faulty parts and get
 increasingly prone to failures due to decay of material.
 
-In the event of a system failure it is desirable to fix the system as soon as
-possible, in order to minimize the downtime of the system (maximize the
+In the event of a system failure, it is desirable to fix the system as soon as
+possible in order to minimize the downtime of the system (maximize the
 availability). This can be accomplished by using different types of recovery
 techniques, e.g. checkpointing (create checkpoints to roll back/forward),
 failover (switch to a redundant system), reboot. All these techniques require
 a certain amount of time to complete the recovery process. This time is very
-valuable, as during the recovery the system is down and cannot provide the
+valuable because during the recovery of the system, it cannot provide the
 required service. In order to minimize this time, techniques have been
 developed to anticipate upcoming failures. The survey \cite{ACM10_Salfner}
 categorizes and describes several proposed failure prediction techniques. One
 specific technique will be the reference work for this thesis and is described
 in \cite{salfner08}.
 
-The accuracy of the proposed algorithm to predict failures in
-\cite{salfner08} proves to be better compared to the other techniques
-\cite{lin88, ICDM02_Vilalta, domeniconi02}. However, it has the drawback of
-increased complexity and hence increased computation time. It is very important
-to keep the computation overhead low in order to maximize the time between the
-prediction of a failure and the actual event of the failure. One way to
-decrease the computation time is to design a \gls{hw} accelerator for the
-prediction algorithm. The design of such an accelerator is outlined in this
-thesis.
+The accuracy of the proposed algorithm to predict failures proves to be better
+compared to the techniques \cite{lin88, ICDM02_Vilalta, domeniconi02}. However,
+it has the drawback of increased complexity and hence increased computation
+time. It is very important to keep the computation overhead low in order to
+maximize the time between the prediction of a failure and the actual event of
+the failure. One way to decrease the computation time is to design a \gls{hw}
+accelerator for the prediction algorithm. The design of such an accelerator is
+outlined in this thesis.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -162,24 +163,25 @@ thesis.
 \label{ch:_intro_prob}
 
 The main idea of the prediction model proposed in the reference work
-\cite{salfner08}, is to predict failures based on sequences of events with
-their time of occurrence. This is modeled with a \gls{hsmm}. The fundamental
-concept is described in Chapter \ref{ch:event}. A detailed description can be
-found in Chapter \cite{salfner08}. In order to perform a prediction, three
-parts are required: the training of the model, the sequence processing, and the
+\cite{salfner08} is to predict failures based on sequences of events with their
+time of occurrence. This is modelled with a \gls{hsmm}. The fundamental concept
+of this model is described in Chapter \ref{ch:event}. A detailed description
+can be found in \cite{salfner08}. Three steps are required to perform
+a prediction: the training of the model, the sequence processing, and the
 classification. The training of the model uses collected error event data
-samples and corresponding oracle predictions (collected from known failures) to
+samples and corresponding oracle predictions, collected from known failures, to
 train the parameters of the model. The training of the model is not time
 critical and is performed off-line (not on a live system). The trained model is
-then able to detect similar sequences as the ones that led to failures in
-previous cases. This is the second part, the sequence processing. This part is
+then able to detect sequences, similar to previous sequences, that led to
+failures before. This is the second step, the sequence processing. This step is
 time critical as it happens on-line on a live system. The system will
 continuously send error events to the sequence processing unit which needs to
 compute a likelihood of the sequence of the last $L$ events. This likelihood
 describes the probability of the observed sequence to be similar to one that
-led to a failure in previous cases. It is sent to a classifier where it is
-compared to a non-failure sequence likelihood. The classifier then predicts if
-the sequence at hand will lead to a failure in the near future.
+led to a failure in previous cases. The likelihood is sent to the last step,
+the classifier, where it is compared to a non-failure sequence likelihood. The
+classifier then predicts if the sequence at hand will lead to a failure in the
+near future.
 
 The failure prediction method, as it was outlined in very few words above and
 discussed in \cite{salfner08}, leads to very good prediction results (cf.
@@ -188,15 +190,15 @@ computational efforts that are necessary to perform the sequence processing.
 This may lead to situations where a failure is correctly predicted, but the
 result of the prediction is only available after the failure has already
 occurred. This would rend the prediction useless. The main goal of this thesis,
-is to accelerate the sequence processing part in order to predict a failure
+is to accelerate the sequence processing step in order to predict a failure
 before it happens. The acceleration will be achieved by running the prediction
-algorithm on specialized \gls{hw}. A common acceleration method is to split
-the algorithm in multiple parts and run each part in parallel on separate
+algorithm on specialized \gls{hw}. A common acceleration method is to split the
+algorithm in multiple parts and run each part, in parallel, on separate
 computational units. To do so, first available parallelism and an appropriate
-accelerator architecture must be found. Then the accelerator must be designed
-and implemented, based on the analysis. Finally the acceleration design must
-be compared to a serial implementation and the speedup, and accuracy must be
-computed.
+accelerator architecture must be found. Then, based on the analysis, the
+accelerator must be designed and implemented. Finally the acceleration design
+must be compared to a serial implementation, and the speedup and accuracy must
+be computed.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -263,7 +265,7 @@ analysis of available parallelism. In Chapter \ref{ch:design} the design of an
 accelerator is proposed, and in Chapter \ref{ch:results} results in terms of
 speedup and accuracy are presented. Chapter \ref{ch:conc} concludes the work
 by presenting the contributions and outlining possible future work related to
-the thesis. The appendix contains a list symbols used throughout the thesis.
+the thesis. The appendix contains a list of symbols used throughout the thesis.
 Also a list of acronyms is provided.
 
 %===============================================================================
@@ -286,18 +288,18 @@ A detailed overview of failure prediction methods is given in
 comparison in the main reference
 \cite{lin88,IEEE90_lin,ICDM02_Vilalta,domeniconi02} as well as the technique
 described in the main reference \cite{salfner08} itself. \cite{lin88} describes
-a error-frequency based approach, \cite{ICDM02_Vilalta} uses a data mining
+an error-frequency based approach, \cite{ICDM02_Vilalta} uses a data mining
 approach, and \cite{domeniconi02} is based on classification. \cite{salfner08}
 proposes a technique based on error-event sequence processing and delivers
 the best results with the cost of higher computation time (cf. Chapter
 \ref{ch:event} for more details).
 
 More recent work uses \gls{hw} counters of a general purpose \gls{cpu} and
-combines them with \gls{sw} instrumentation to analyze failures of single
+combines them with \gls{sw} instrumentation to analyse failures of single
 processes (e.g grep, flex, sed) \cite{FSE10_Yilmaz}. As industry heads more and
 more towards cloud computing, it has been proposed to use information of
-interaction between nodes (instead of analyzing single nodes) in order to
-analyze and predict failures of a distributed system
+interaction between nodes (instead of analysing single nodes) in order to
+analyse and predict failures of a distributed system
 \cite{IEEE12_Salfner,DSN10_Oliner}.
 
 %-------------------------------------------------------------------------------
@@ -308,7 +310,7 @@ analyze and predict failures of a distributed system
 The main goal of this master's thesis is to accelerate an extension of the
 forward algorithm. The forward algorithm is used in the context of \glspl{hmm}.
 It is used to compute the probability of occurrence of a certain sequence,
-given a \gls{hmm}. A proposals for \gls{gpu} based accelerator for the classic
+given a \gls{hmm}. A proposal for a \gls{gpu} based accelerator for the classic
 forward algorithm is described in \cite{liu09}. Further, several proposals to
 accelerate the Viterbi algorithm (which is closely related to the forward
 algorithm) have been published: \cite{ASAP12_Azhar} presents an architecture
@@ -320,9 +322,9 @@ algorithm from the HMMER library\footnote{http://hmmer.janelia.org/} using
 \glspl{gpu}.
 
 Focusing on a more general approach for acceleration, \cite{ARITH13_Kadric}
-proposes an \gls{fpga} implementation of a parallel floating-point accumulation,
-and \cite{ITNG07_Yang} describes the implementation of a vector processor on
-\gls{fpga}.
+proposes an implementation on \gls{fpga} of a parallel floating-point
+accumulation, and \cite{ITNG07_Yang} describes the implementation of a vector
+processor on \gls{fpga}.
 
 Quite some research has been done on the question of what type of technology
 should be used to accelerate computation intensive algorithms:
@@ -335,12 +337,12 @@ comparison and also takes \glspl{cpu} into account.
 
 It may be interesting to also think about an acceleration of the model
 training. While \cite{salfner08} proposes to perform the training off-line with
-no time constraints, it may be beneficial constantly train the model parameters
-on-line, due to possible changes of the system. Similar work has been done by
-accelerating \glspl{svm}: \cite{FCCM09_Cadambi} describes a \gls{fpga} based
-accelerator for the \gls{svm}-\gls{smo} algorithm used in the domain of machine
-learning, and \cite{IEEE03_Anguita} proposes a new algorithm and its
-implementation on a \gls{fpga} for \glspl{svm}.
+no time constraints, it may be beneficial to constantly train the model
+parameters on-line, due to possible changes of the system. Similar work has
+been done by accelerating \glspl{svm}: \cite{FCCM09_Cadambi} describes
+a \gls{fpga} based accelerator for the \gls{svm}-\gls{smo} algorithm used in
+the domain of machine learning, and \cite{IEEE03_Anguita} proposes a new
+algorithm and its implementation on a \gls{fpga} for \glspl{svm}.
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -359,28 +361,28 @@ a definition of the fixed parameters is provided.
     \item L: observation sequence length
     \item R: number of \glspl{cdf} (kernels)
 \end{itemize}
-These are fixed parameters because they need to be set at design time,
-based on the properties of the system emitting error events.
+These are fixed parameters because they need to be set at design time. They are
+based on the properties of the system which emits the error events.
 
 The proposed failure prediction method aims to find sequences of error events
 that led to failures in the system on previous occasions. In addition to
-a specific sequence of events, also the time of occurrence of the event is taken
+a specific sequence of events also the time of occurrence of the event is taken
 into account (or more precisely, the delay as defined in Equation
 \ref{eq:delay}). The error events that are produced by the system usually need
-to be preprocessed or brought in to a form understandable for the predictor.
-The error events must build a set of distinct symbols, denoted as $A=\{o_1,
-\dots, o_M\}$. This set is also called alphabet of size $M$. Details on
-preprocessing the events can be found in Section \ref{ch:event_data}. The
-delay of the event at time $ t_k $ with respect to the event at time $ t_{k-1}
-$ is described as
+to be preprocessed and brought in to a form understandable for the predictor.
+The error events must build a set of distinct symbols, denoted as
+$\boldsymbol{o}=\{o_1, \dots, o_M\}$. This set is also called alphabet of size
+$M$. Details on preprocessing the events can be found in Section
+\ref{ch:event_data}. The delay of the event at time $ t_k $ with respect to the
+event at time $ t_{k-1} $ is described as
 \begin{equation}
 \label{eq:delay}
     d_k = t_k-t_{k-1}
 \end{equation}
 
-To detect specific sequences of events by also taking the time of occurrence
+To detect specific sequences of events, by also taking the time of occurrence
 into account, an extension of the \gls{hmm} is proposed. The resulting model is
-called \acrfull{hsmm}. A extended forward algorithm is used to compute the
+called \acrfull{hsmm}. An extended forward algorithm is used to compute the
 likelihood of occurrence of a certain sequence of observation symbols, also
 considering the time of occurrence of an observation symbol. Section
 \ref{ch:event_sequ} presents the formal definitions of the algorithm on how the
@@ -413,20 +415,20 @@ a complete prediction model with multiple failure types.
 \section{Data Processing}
 \label{ch:event_data}
 
-The failure prediction method is based on error events. The most common form of
-how error events are saved is log entries in a file structure. Although work
-has been done to propose standardized techniques on how log events should be
-stored (\cite{IPDPS04_Salfner, DSN09_Ziming}), it is still not common to
-follow such approaches. This results in a large number of different log
-structures that makes automated processing of such data difficult. Common
-issues that need to be taken care of are: different representation of time
-stamps, numbers in log messages that need to be filtered (e.g. process id),
-typos, and different text messages with the same meaning.
+The failure prediction method is based on error events. The most common form,
+how to save error events, are log entries in a file structure. Although work has
+been done to propose standardized techniques on how log events should be stored
+(\cite{IPDPS04_Salfner, DSN09_Ziming}), it is still not common to follow such
+approaches. This results in a large number of different log structures that
+makes automated processing of such data difficult. Common issues that need to
+be taken care of are: different representation of time stamps, numbers in log
+messages that need to be filtered (e.g. process id), typos, and different text
+messages with the same meaning.
 
 The reference work \cite{salfner08} describes methods on how to process log
 files and create unique error ids that then build an alphabet of symbols. This
 has been done on real case data. In this work no \gls{hw} or \gls{sw} solution
-is provided to pre-process data. It is assumed that the events are already in
+is provided to preprocess data. It is assumed that the events are already in
 a form that is readable by the accelerator.
 
 %-------------------------------------------------------------------------------
@@ -436,13 +438,13 @@ a form that is readable by the accelerator.
 
 The model training is based on an extension of the Baum-Welch Algorithm. The
 model needs to be trained only once. Afterwards it can be used without
-training.  Therefore, this part will not be accelerated. Hence, only a brief,
+training. Therefore, this part will not be accelerated. Hence, only a brief,
 non-formal description of the algorithm is presented. For a more detailed
 explanation and proof, refer to \cite{salfner08}. The training is used to
 estimate the parameters for each \gls{hsmm}.
 
 The parameters to be trained are used by the extended forward algorithm, an
-algorithm that allows to compute a sequence likelihood, for each sequence of
+algorithm that allows to compute a sequence likelihood for each sequence of
 observation symbols (error events). The forward algorithm is described in
 the next section. Following the parameters:
 \begin{itemize}
@@ -458,13 +460,13 @@ the next section. Following the parameters:
         $i,j \in \{1, \dots, N\} $
 \end{itemize}
 
-The estimation of the parameters can be done by using real error event logs,
+The estimation of the parameters can be done by using real error event logs
 associated to real failures. The delay and id of each error event as well as
 the timestamp and type of the failure are known. With an iterative approach
 (Baum-Welch algorithm), the parameters can be estimated in order to allow the
 \gls{hsmm} to produce a value that describes the likelihood of a specific event
-sequence to produce a failure of a specific type. Due to the proposed extension
-of also taking the delay of an event into account, the Baum-Welch algorithm was
+sequence to produce a failure of a specific type. Due to the proposed extension,
+also taking the delay of an event into account, the Baum-Welch algorithm was
 extended with a gradient descent approach to estimate the kernel parameters of
 the chosen \glspl{cdf}.
 
@@ -474,27 +476,27 @@ the chosen \glspl{cdf}.
 \label{ch:event_sequ}
 
 The following description will provide a complete blueprint of the extended
-forward algorithm, without any explanations or proofs related to the
+forward algorithm without any explanations or proofs related to the
 formulation. Those are provided in \cite{salfner08}. While the basic forward
 algorithm is used to calculate a sequence likelihood based on an \gls{hmm}, with
 the extension it is possible to do the same for the proposed \gls{hsmm}. The
 extension takes into account that events are not emitted with a constant
-period.  This variance of the delay (cf. \ref{eq:delay}) is modeled by
+period. This variance of the delay (cf. \ref{eq:delay}) is modelled by
 introducing one or more \glspl{cdf}, also called kernels. The extended forward
-algorithm is formally defined as follows:
+algorithm is defined as follows:
 
 \begin{equation}
     \label{eq:forward_init}
-    \alpha_0(i) = \pi_{i}b_{s_i}(O_0) \\
+    \alpha_1(i) = \pi_{i}b_{s_i}(O_1) \\
 \end{equation}
 \begin{equation}
     \label{eq:forward}
     \alpha_k(j) = \sum_{i=1}^{N} \alpha_{k-1}(i) v_{ij}(d_k) b_{s_j}(O_k);
-    \quad 1 \leq k \leq L
+    \quad 2 \leq k \leq L
 \end{equation}
 where $\alpha_k(i)$ is a component of the forward variable vector.
 $v_{ij}(d_k)$ is called the transition probability, forming the matrix $V$ of
-size $N \times N$, defined as:
+size $N \times N$. It is defined as:
 \begin{equation}
     \label{eq:V}
     v_{ij}(d_k) = \left\{
@@ -512,7 +514,7 @@ with
 \end{equation}
 $d_{ij}(d_k)$ is forming the matrix of cumulative transition duration
 distribution functions $D(d_k)$ of size $ N\times N$. While the kernel
-parameters are fixed (with the training of the model), the delay of the event
+parameters are fixed, with the training of the model, the delay of the event
 is not. This implies that for each event, a new transition probability matrix
 must be computed.
 
@@ -523,23 +525,23 @@ weights can be ignored. Equation \ref{eq:D} can then be simplified to:
     d_{ij}(d_k) = \kappa_{ij}(d_k | \theta_{ij})
 \end{equation}
 
-The kernel parameters are dependent of the choice of \glspl{cdf} (a choice that
-is done at design time). E.g. the Gaussian \gls{cdf} results in the kernel
-parameters $\mu_{ij}$ and $\sigma_{ij}$.
+The kernel parameters are dependent on the choice of \glspl{cdf}. E.g. the
+Gaussian \gls{cdf} results in the kernel parameters $\mu_{ij}$ and
+$\sigma_{ij}$. A \gls{cdf} is chosen at design time.
 
 Comparing the extended forward algorithm to the basic version, the only
 difference is the transition probability matrix. While the extension has
 variable transition probabilities, those of the basic version are constant. The
-basic Equation can be expressed as
+basic forward algorithm is defined as follows:
 
 \begin{equation}
     \label{eq:forward_init_basic}
-    \alpha_0(i) = \pi_{i}b_{s_i}(O_0) \\
+    \alpha_1(i) = \pi_{i}b_{s_i}(O_1) \\
 \end{equation}
 \begin{equation}
     \label{eq:forward_basic}
     \alpha_k(j) = \sum_{i=1}^{N} \alpha_{k-1}(i) a_{ij} b_{s_j}(O_k);
-    \quad 1 \leq k \leq L
+    \quad 2 \leq k \leq L
 \end{equation}
 
 Throughout the document, one transition probability of the basic forward
@@ -548,7 +550,7 @@ the extension the notation $v_{ij}$ for the probability and $V$ for the matrix
 will be used. If both versions are addressed at the same time, the notation
 $q_{ij}$ for one element will be used and $Q$ for the matrix.
 
-The last set of forward variables $ \alpha_L $ are then summed up to compute
+The last set of forward variables $\alpha_L$ are then summed up to compute
 a probabilistic measure for the similarity of the observed sequence compared to
 the sequences in the training data set. This is called the sequence likelihood:
 \begin{equation}
@@ -557,7 +559,7 @@ the sequences in the training data set. This is called the sequence likelihood:
 \end{equation}
 where $ \lambda = \{\boldsymbol{\pi}, P, B, D(d_k) \} $.
 
-To prevent $ \alpha $ from going to zero very fast, at each step of the forward
+To prevent $\alpha$ from going to zero very fast, at each step of the forward
 algorithm a scaling is performed:
 \begin{equation}
     \label{eq:scaled}
@@ -623,8 +625,9 @@ as follows:
     \frac{P(s|\lambda_F)}{P(s|\lambda_{\bar{F}})} > \theta_{th}
 \end{equation}
 with $\boldsymbol{s}$ denoting the sequence, $\lambda_F$ representing the
-parameter set of the failure model and $\lambda_{\bar{F}}$ the parameter set of
-the non-failure model. $\theta_{th}$ is defined with Equation \ref{eq:class_thresh}.
+parameter set of the failure model, and $\lambda_{\bar{F}}$ the parameter set
+of the non-failure model. $\theta_{th}$ is defined with Equation
+\ref{eq:class_thresh}.
 
 For multi-class classification the following rule can be used:
 \begin{equation}
@@ -656,7 +659,7 @@ positive rate metrics of the following failure prediction algorithms:
         used. The method is described in \cite{ICDM02_Vilalta}. It is
         a data-mining approach.
     \item[\acrshort{svd}-\acrshort{svm}] \acrfull{svd} is used to reduce the
-        number of dimensions in bag of words error sequence representation.
+        number of dimensions in a bag of words error sequence representation.
         This method follows a classification approach. \glspl{svm} are used
         as classification technique. It is described in \cite{domeniconi02}.
     \item[HSMM] This is the proposed algorithm of the reference work
@@ -707,8 +710,8 @@ useful) parallelization techniques applicable to the algorithm. The generally
 known forward algorithm as well as the extended version proposed in
 \cite{salfner08} are discussed. Further, scaling techniques of the forward
 variables and their impact on data representation choices are presented.
-Finally the observations are presented in an overview, and an appropriate choice
-on possible acceleration \gls{hw} is made.
+Finally, the observations are presented in an overview, and an appropriate
+choice on possible acceleration \gls{hw} is made.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
@@ -718,30 +721,32 @@ on possible acceleration \gls{hw} is made.
 The sequential implementation of the basic forward algorithm is represented in
 Figure \ref{list:forward_basic}. It consist of three steps: the initialization
 step, the computation of consecutive forward variables, and the final step
-where the likelihood is computed. The initial $ \alpha $ variable is computed
-by multiplying the initial state probability with the emission probability of
-the first observation symbol of the sequence (cf. Equation
+where the likelihood is computed. The initial forward variable vector
+$\alpha_1$ is computed by multiplying, element-wise, the initial state
+probability vector $\pi$ with the emission probability vector of the first
+observation symbol of the sequence $B(O_1)$ (cf. Equation
 \ref{eq:forward_init}). The computation of the following forward variables
-consists of three nested loops: the outer loop iterates over the $ L $ sets of
-$ N $ $ \alpha $ variables where each variable $\alpha_k(i)$ depends on all
-prior computed variables $\alpha_{k-1}$ and the k-th observation symbol of
-a sequence. The first inner loop iterates over the $ N $ $ \alpha $ variables
-of one set where each variable is computed with the innermost loop. The two
-nested inner loops form the Matrix-Vector-Vector multiplication
+$\alpha_k, \; k \in \{2, \dots, L\}$ consists of three nested loops: the outer
+loop iterates over the $L$ sets of $N$ $\alpha_k(i)$ variables where each
+variable $\alpha_k(i)$ depends on all prior computed variables $\alpha_{k-1}$
+and the k-th observation symbol of a sequence. The first inner loop iterates
+over the $N$ $\alpha_k(i)$ variables of one set where each variable is computed
+with the innermost loop. The two nested inner loops form the
+matrix-vector-vector multiplication
 \begin{equation}
     \label{eq:mvv}
     \alpha_{k+1}(i) = \big(Q \alpha_k\big)(i) \cdot \big(B(O_k)\big)(i) \;\;\;
         \forall i \in \{1, \dots, N\}
 \end{equation}
-where $ \alpha_k $ is a vector of size $ N $ of the prior computed $ \alpha
-$ variables, $ Q $ a matrix of size $ N \times N $ containing the transition
-probabilities and $ B(O_k) $ a vector of size $ N $ containing the emission
+where $\alpha_k$ is a vector of size $N$ of the prior computed $\alpha$
+variables, $Q$ a matrix of size $N \times N$ containing the transition
+probabilities and $B(O_k)$ a vector of size $N$ containing the emission
 probabilities of the k-th observation symbol. Note that the first
-multiplication is a Matrix-Vector multiplication that results in a vector
-which is then multiplied element-wise with the vector $ B(O_k) $. The Equation
+multiplication is a matrix-vector multiplication that results in a vector which
+is then multiplied element-wise with the vector $B(O_k)$. The Equation
 \ref{eq:forward} describes the formal definition of the forward algorithm. In
 the final step the likelihood is computed, by summing up all elements of the
-last forward variable $ \alpha_L $ (cf. Equation \ref{eq:P}).
+last forward variable $\alpha_L$ (cf. Equation \ref{eq:P}).
 
 \begin{figure}
     \centering
@@ -754,10 +759,10 @@ last forward variable $ \alpha_L $ (cf. Equation \ref{eq:P}).
 As proposed by the reference work, the forward variables can be scaled, in
 order to prevent the result from getting very small due to the continuous
 multiplication of probabilities. The implementation of the proposed scaling
-method is shown in Figure \ref{list:forward_scaling}. The scaling is formally
-defined by the Equations \ref{eq:scaled} and \ref{eq:scaling_factor}. Due to the
-scaling, instead of the likelihood, the log-likelihood is computed. Equation
-\ref{eq:Plog} gives the formal definition.
+method is shown in Figure \ref{list:forward_scaling}. The scaling is defined by
+the Equations \ref{eq:scaled} and \ref{eq:scaling_factor}. Due to the scaling,
+instead of the likelihood, the log-likelihood is computed. Equation
+\ref{eq:Plog} gives the definition.
 
 \begin{figure}
     \centering
@@ -770,14 +775,14 @@ scaling, instead of the likelihood, the log-likelihood is computed. Equation
 The algorithm to compute the sequence likelihood proposed by \cite{salfner08}
 is an extension of the forward algorithm presented in the Figures
 \ref{list:forward_basic} and \ref{list:forward_scaling}. Instead of constant
-transition probabilities, the extended algorithm computes a new transition
-probability matrix (size $ N \times N$) for each arriving observation symbol,
-by considering the delay of the new symbol with respect to the prior symbol.
-The computation of the transition probability matrix $ Q $ is implemented with
-Figure \ref{list:ext} and formally defined by the Equations \ref{eq:V},
-\ref{eq:D}, \ref{eq:D_fact}, and \ref{eq:kernel}. As in \cite{salfner08}, also
-here for reasons of simplification, only one kernel is used. In the sample code
-the Gaussian cumulative distribution function is used. The function needs to be
+transition probabilities the extended algorithm computes a new transition
+probability matrix (size $N \times N$), for each arriving observation symbol,
+by considering the delay of the new symbol with respect to the previous symbol.
+The computation of the transition probability matrix $Q$ is implemented with
+Figure \ref{list:ext} and defined by the Equations \ref{eq:V}, \ref{eq:D},
+\ref{eq:D_fact}, and \ref{eq:kernel}. As in \cite{salfner08}, also here for
+reasons of simplification, only one kernel is used. In the sample code the
+Gaussian cumulative distribution function is used. The function needs to be
 called for every k.
 
 \begin{figure}
@@ -796,14 +801,14 @@ stays therefore the same. This is also true for the space complexity which is of
 order $O(N^2)$. The order of complexity is important for big $N$ and $L$.
 However for smaller values of $N$ and $L$, the real complexity becomes more
 important. Sections \ref{ch:analysis_scale} and \ref{ch:analysis_ext} will
-discuss scaling respectively the extension in detail.
+discuss scaling and the extension in detail.
 
 %-------------------------------------------------------------------------------
 %===============================================================================
 \section{Parallelism and Feasible Parallelization}
 \label{ch:analysis_parallel}
 
-Parallelization methods are applied in order to increase the throughput or
+Parallelization methods are applied in order to increase the throughput,
 reduce the latency of a task, or to achieve both at the same time. It can be
 done at the cost of increased usage of parallel computation units, memory, and
 memory bandwidth.
@@ -817,13 +822,13 @@ variables. For this reason a direct parallelization of the steps is not
 possible. However, with each arrival of a new observation symbol, the last $L$
 elements of the observation symbol sequence are used to compute the likelihood
 (cf. Figure \ref{fig:sliding}). This can be exploited to pipeline the steps in
-order to increase the throughput. By building a pipeline of $L+1$ stages where
+order to increase the throughput. By building a pipeline of $L+1$ stages, where
 each step of the forward algorithm corresponds to a pipeline stage,
-a likelihood is computed at every completion of a step, with a latency of
+a likelihood is computed at every completion of a step with a latency of
 $(L+1)*t_{step_{max}}$ where $t_{step_{max}}$ is the time needed to complete
-the computation of the most complex step (each stage of the pipeline must take
-the same amount of clock cycles). The throughput of a pipelined compared to
-a non-pipelined system is increased by factor $L$ (assuming an infinite runtime
+the computation of the most complex step. Each stage of the pipeline must take
+the same amount of clock cycles. The throughput of a pipelined system, compared to
+a non-pipelined, is increased by factor $L$ (assuming an infinite runtime
 or by ignoring the setup time). Another and more important fact that makes the
 pipeline architecture very beneficial in this particular case: the
 configuration allows to load the transition probabilities $Q$ and the emission
@@ -841,7 +846,7 @@ extension is considered.
 \begin{figure}
     \centering
     \input{./schema/window.tex}
-    \caption{Sliding window over an observation sequence of the
+    \caption{Example of a sliding window over an observation sequence of the
         last $L=10$ observation symbols.}
     \label{fig:sliding}
 \end{figure}
@@ -915,7 +920,7 @@ By considering all dissimilar steps of the forward algorithm, more
 parallelization options can be found. In the initial step, $N$ components of
 the first forward variable $\alpha_1$ are computed by multiplying independent
 pairs of an initial state probability $\pi_i$ and an emission probability of
-the first observation symbol $b_i(o_0)$. This can be fully parallelized by
+the first observation symbol $b_i(O_1)$. This can be fully parallelized by
 replicating the multiplication operation $N$ times. Doing this results in an
 increase of the throughput by factor $N$ and a decrease of the latency by
 factor $\frac{1}{N}$, assuming that $N$ multipliers are available and the
@@ -924,13 +929,13 @@ the sequential case.
 
 The computation of the subsequent forward variables $\alpha_k$, with $k
 = 2 \dots L$ are equivalent in terms of \gls{hw}. To compute the $N$ elements
-of one step, the Matrix-Vector-Vector multiplication described by Equation
-\ref{eq:mvv} must be performed. Considering first only the Matrix-Vector
+of one step, the matrix-vector-vector multiplication, described by Equation
+\ref{eq:mvv}, must be performed. Considering first only the matrix-vector
 multiplication, this can be parallelized by decomposing the matrix into subsets
 and then use multiple computational units to perform multiplication and/or
 accumulation operations in parallel on the subsets. An intuitive decomposition
 can be done either by block-striped matrix partitioning (decomposition into
-subsets of rows or columns) or by checkerboard block matrix partitioning
+subsets of rows or columns) or by chequerboard block matrix partitioning
 (decomposition in rectangular sets of elements). These partitioning methods are
 shown in Figure \ref{fig:matrix_partitioning}. The number of subsets must
 correspond to the number of available computational units to perform the
@@ -945,19 +950,19 @@ that $N$ computational units are available to perform the multiplication and
 accumulation operation on each subset, $N$ multipliers to compute the final
 element-wise vector-vector multiplication, and a memory interface that can
 handle a data throughput that is $N$ times higher than in the sequential case.
-The checkerboard partitioning yields a lower gain but may be considered in case
-of fixed computational unit architecture (\gls{cpu}, \gls{gpu}) in order to
-increase the utilization of resources available in each unit. Apart from
-homogeneous partitioning methods as mentioned above also inhomogeneous
-solutions have been proposed \cite{IPDPSW12_DeFlumere, clarke11}.  These are
-not considered in this work, as the focus lies on homogeneous computation
+The chequerboard partitioning yields a lower gain but may be considered, in
+case of fixed computational unit architecture (e.g. \gls{cpu}, \gls{gpu}), in
+order to increase the utilization of resources available in each unit. Apart
+from homogeneous partitioning methods, as mentioned above, also inhomogeneous
+solutions have been proposed \cite{IPDPSW12_DeFlumere, clarke11}. These are
+not considered in this work as the focus lies on homogeneous computation
 units.
 
 \begin{figure}
     \centering
     \input{./schema/matrix.tex}
     \caption{Matrix partitioning (from left to right): column-block-striped,
-        row-block-striped, and checkerboard blocks.}
+        row-block-striped, and chequerboard blocks.}
     \label{fig:matrix_partitioning}
 \end{figure}
 
@@ -968,7 +973,7 @@ to first multiply two operands together, then adding $\frac{N}{2}$ resulting
 operand pairs in a second step, and then consecutively adding resulting pairs
 until only one value is left. This process is visualized in Figure
 \ref{fig:red_tree}. The maximal increase of throughput is of factor
-$\log_2(N)$.  The latency can be decreased by factor $\frac{1}{\log_2(N)}$.
+$\log_2(N)$. The latency can be decreased by factor $\frac{1}{\log_2(N)}$.
 This is possible, assuming that $N$ computation units are available and the
 memory interface is able to handle a throughput that is $N$ times higher than
 in the sequential case.
@@ -981,10 +986,10 @@ in the sequential case.
 \end{figure}
 
 The finalization step of the algorithm consists of calculating the likelihood.
-This is done by simply accumulating the $N$ elements of the last forward
-variable $\alpha_L$. This operation can be parallelized with a reduction tree,
-resulting in a throughput and latency optimization of $log_2(N)$ and
-$\frac{1}{log_2(N)}$ respectively as described above.
+This is done by accumulating the $N$ elements of the last forward variable
+$\alpha_L$. This operation can be parallelized with a reduction tree, resulting
+in a throughput and latency optimization of $log_2(N)$ and $\frac{1}{log_2(N)}$
+respectively as described above.
 
 The following sections will describe the impact on performance if scaling or
 the extension of the forward algorithm is implemented. Also the availability of
@@ -1028,7 +1033,7 @@ log-likelihood can be parallelized by using $N$ units computing the log
 function and additionally by a reduction tree to speed up the accumulation.
 
 Instead of using the proposed scaling method, a simpler scaling may be applied.
-By analyzing the operands, an average scaling factor can be computed. Using the
+By analysing the operands, an average scaling factor can be computed. Using the
 knowledge that all the operands are probabilities,
 
 \begin{equation}\begin{split}
@@ -1063,12 +1068,12 @@ factor can cause an overflow (very bad because the result will be wrong) or an
 underflow (may be acceptable because it is only a loss of precision). In this
 case, rather than choosing an average scaling factor of $\frac{1}{M}$ it is
 safer to choose the scaling factor to be equal to the maximal possible scaling
-factor of all values of a specific event in $B$ (scale $\max\big(B(o_j)\big)$).
-By doing this, the scaling factor will be too small and if $L$ is big, the
-forward variables will still approach zero, only slower than without scaling.
-This is either acceptable because of a high precision, or another scaling
-factor must be computed to prevent this. The implemented solution will be
-explained in detail in Chapter \ref{ch:design}.
+factor of the biggest value of a specific event in $B$ (scale
+$\max\big(B(o_j)\big)$). By doing this, the scaling factor will be too small
+and if $L$ is big, the forward variables will still approach zero, only slower
+than without scaling. This is either acceptable because of a high precision,
+or another scaling factor must be computed to prevent this. The implemented
+solution will be explained in detail in Chapter \ref{ch:design}.
 
 Another aspect to consider is the choice of data representation (floating-point
 versus fixed-point). This depends the on one hand on the necessary precision
@@ -1086,11 +1091,11 @@ affected at all by the choice of data representation.
 If by choice, scaling is omitted, a fixed-point representation will not be
 possible due to the rapid convergence towards zero by continuously multiplying
 probabilities. This implies that by omitting scaling to save resources,
-a floating-point representation must be used. This in turn increases the
+a floating-point representation must be used. This, in turn, increases the
 resource requirements or has a negative impact on performance (or both).
 
 The trade-off between the choice of using scaling or not versus the choice of
-the precision and the data representation will be analyzed in more detail in
+the precision and the data representation will be analysed in more detail in
 Chapter \ref{ch:design}, when the technology of the accelerator has been
 chosen.
 
@@ -1275,7 +1280,7 @@ thousands of \glspl{fpga} or \glspl{gpu} would be necessary. Considering this,
 the reduction tree parallelization method will not be used as it gives the
 fewest benefits ($O(LogN)$) for its cost ($O(N)$). Computation units in an
 order of $N^2$ (2nd column) is feasible for small $N$ by combining multiple
-devices. While this may be acceptable for a very important system,  where
+devices. While this may be acceptable for a very important system where
 lots of people depend upon (e.g. weather forecast, Google queries, etc.)
 failure prediction hardly falls into this category especially if failures of an
 embedded system are predicted. Additionally, using multiple devices in order
@@ -1382,9 +1387,9 @@ columns).
 \end{table}
 
 The benefits of a parallel architecture over the pipelined are first and
-foremost the reduced latency, and in case of the basic algorithm also the lower
+foremost the reduced latency and in case of the basic algorithm also the lower
 memory footprint. If the acceleration architecture of choice has a memory
-interface that allows the required throughput, for the basic algorithm, this
+interface that allows the required throughput, for the basic algorithm this
 architecture should be chosen. In case of the extended algorithm this is only
 possible if enough computational units are available (and the \gls{cdf}
 computation is not too complex) or if the on-chip memory is large enough to
@@ -1410,9 +1415,9 @@ compute the transition probabilities. Parallelization is only possible for very
 simple \gls{cdf} computations and for a small $N$.
 
 The scalability is in both cases limited but more so with the parallel
-architecture: If $N$ or $L$ becomes large such that off-chip memory is
+architecture: If $N$ or $L$ becomes large, such that off-chip memory is
 necessary (already for very small $N$ or $L$ for \glspl{cpu} and \glspl{gpu},
-less so for more flexible architectures like \glspl{fpga} or \glspl{asic}) the
+less so for more flexible architectures like \glspl{fpga} or \glspl{asic}), the
 memory interface will be too small to handle memory access simultaneously and
 hence become the bottleneck. The pipelined architecture does not have this
 drawback but has a slightly higher memory footprint. If memory can be handled
@@ -1444,7 +1449,7 @@ the following list and the observations discussed in the previous sections.
         with no requirements in \gls{hw} knowledge. Operations like division,
         exponential function, and logarithm are available as well as the
         floating-point number representation. All operations can be executed
-        with very high precision and at high clock frequencies (up to 3 GHz).
+        with very high precision and at high clock frequencies (up to 4 GHz).
         \glspl{cpu} come with the drawback of a high power consumption, limited
         parallelization options (small number of cores), and a fixed \gls{hw}
         architecture that causes big computation overheads (instruction
@@ -1489,7 +1494,7 @@ the following list and the observations discussed in the previous sections.
         direct \gls{hw} representation of the function. This direct
         representation allows a very low overhead as operations are done
         directly in \gls{hw} without any instruction pipeline. \glspl{fpga}
-        provide a high amount of \gls{hw} flexibility that is only toped by
+        provide a high amount of \gls{hw} flexibility that is only topped by
         \glspl{asic} (see below). This flexibility comes at a medium price as
         \glspl{fpga} can be produced in big lots but are more difficult to
         produce than \glspl{dsp}. A huge advantage is the possibility to
@@ -1509,7 +1514,7 @@ the following list and the observations discussed in the previous sections.
         that has been designed for one (and only one) specific application. In
         comparison to the \gls{fpga}, an \gls{asic} is built with fully
         customized elements and provides the full flexibility achievable with
-        todays \gls{hw} knowledge. An \gls{asic} has ideally no overhead as the
+        today's \gls{hw} knowledge. An \gls{asic} has ideally no overhead as the
         \gls{hw} is a direct mapping of the function. This leads to very high
         performance at very low power consumption (as a rule of thumb a factor
         of 1000 can be assumed in either performance gain or power consumption
@@ -1581,10 +1586,10 @@ hence be discussed in the next chapter where the focus lies on one specific
 type of \gls{hw} device. A list with only non-zero elements instead of a sparse
 matrix reduces the necessary memory to store the data and makes a lot of
 computations superfluous. A Matrix-Vector multiplication parallelization as
-described in the previous section would not be beneficial anymore as a lot of
+described in the previous section would not be beneficial any more as a lot of
 computational units would be idle in most of the time. A sparse matrix vector
 multiplication method should be used in this case, but this will not be
-analyzed in this thesis.
+analysed in this thesis.
 
 %===============================================================================
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1656,7 +1661,7 @@ the accumulator must be cleared. It takes three pipeline stages to pipeline the
 cycles to accumulate all multiplication pairs ($\alpha_{k-1, j} * q_{i,j}$) and
 $2$ cycles to perform the final multiplication. The setup time of three and two
 cycles only needs to be considered once if a well timed reset of the
-accumulator is performed. Therefore the computation of all components pf the
+accumulator is performed. Therefore the computation of all components of the
 vector $\alpha_k$ adds up to $N^2+5$ cycles.
 \begin{figure}
     \centering
@@ -1711,7 +1716,7 @@ information).
 Figure \ref{fig:arch_step} shows the detailed design of one pipeline stage, if
 the multiplication unit (\gls{dsp} slice) is reused and if two memory blocks
 are used (alternating one to write new data and one to read data stored from
-the last $\alpha$ vector computation). The control signals are not labeled here
+the last $\alpha$ vector computation). The control signals are not labelled here
 for reasons of readability and will be explained in detail in Chapter
 \ref{ch:design_ctrl}.
 
@@ -1901,7 +1906,7 @@ width of 48 bits. This allows a lossless multiplication (43 bits) and an
 accumulation with 5 bits margin for overflow. Due to the properties expressed
 in Equations \ref{eq:scaling_sum}, these five additional bits are not necessary
 in the present case. After the \gls{macc} operation, the second multiplication
-takes again operands of width 18 bits resp 25 bits as input. Therefore, the
+takes again operands of width 18 bits and 25 bits as input. Therefore, the
 result of the \gls{macc} needs to be truncated. In order to not loose too much
 information, at this step scaling must be introduced.
 
@@ -2092,7 +2097,7 @@ of all the control signals is provided in table \ref{tab:ctrl_detailed}.
 \section{Implementation and Testing}
 
 The implementation of the algorithm was done following the bottom up
-approach: Each functional block was tested separately using test scrips
+approach: Each functional block was tested separately using test scripts
 and the iSimi\footnote{http://www.xilinx.com/tools/isim.htm} simulator of the
 Xilinx
 ISE\footnote{http://www.xilinx.com/products/design-tools/ise-design-suite/}
@@ -2126,7 +2131,7 @@ unit is the controller. Only one controller provides all control signal for the
 pipeline. This results in a big fanout of the control signals (increasing with
 $L$) and long paths to reach each pipeline stage. The problem of the fanout can
 be solved by using clock buffers, and the long path can be optimized by manually
-placing the controller in the center of the device. Another option would be to
+placing the controller in the centre of the device. Another option would be to
 replicate parts of the controller or find relations between control signals and
 compute local control signals in the pipeline stages.  Such optimizations for
 higher frequencies have not been done due to the complexity and the limited
@@ -2290,7 +2295,7 @@ power consumption of the accelerator (estimated consumption of
 \gls{cpu} (\gls{tpd} of 17W) the results are promising and meet the
 expectations.
 
-By analyzing the table in more detail, big jumps in speedup occur whenever $L$
+By analysing the table in more detail, big jumps in speedup occur whenever $L$
 becomes too big and scaling must also be applied with floating-point numbers.
 Not only scaling is an issue but also the size of data. The bigger $L$ and $N$
 grows, the more likely it becomes that the cache of the \gls{cpu} is too small
@@ -2399,8 +2404,8 @@ Throughout this thesis a lot of options have been presented, and a lot of
 decisions have been taken. The vast amount of possibilities in the field of
 accelerators poses a big challenge to find a solution close to the optimum.
 One goal of the thesis was to consider multiple viewpoints and trade-offs, and
-use interdisciplinary knowledge in order to analyze the problems and then take
-the right choice. A lot of decisions are thoroughly discussed and analyzed in
+use interdisciplinary knowledge in order to analyse the problems and then take
+the right choice. A lot of decisions are thoroughly discussed and analysed in
 the thesis. However, there is still potential to improve and maybe even
 reconsider some points. The former points will be concluded in Section
 \ref{ch:conc_ach} and the latter in Section \ref{ch:conc_work}.
